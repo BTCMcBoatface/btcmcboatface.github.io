@@ -11,7 +11,7 @@
         body {
             margin: 0;
             height: 100vh;
-            background-color: #FFF5EB;
+            background-color: #FFE8D6;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -37,7 +37,15 @@
 </head>
 <body>
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-        <line x1="0" y1="100" x2="100" y2="0" stroke="#2D0A31" stroke-width="0.3"/>
+        <defs>
+            <linearGradient id="lineGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" style="stroke-width:2;"/>
+                <stop offset="100%" style="stroke-width:0.1;"/>
+            </linearGradient>
+        </defs>
+        <line x1="0" y1="100" x2="100" y2="50" stroke="#2D0A31" stroke-width="1.5" vector-effect="non-scaling-stroke">
+            <animate attributeName="stroke-width" values="2;0.2" dur="1ms" fill="freeze"/>
+        </line>
     </svg>
     <h1>Boatface</h1>
 </body>
