@@ -22,7 +22,7 @@
         h1 {
             font-family: 'Space Grotesk', sans-serif;
             font-size: 5rem;
-            color: #6E51F2;
+            color: #45279B;
             z-index: 2;
             letter-spacing: -0.03em;
             text-shadow: 
@@ -37,12 +37,62 @@
             height: 100%;
             z-index: 1;
         }
+
+   #circleSvg {
+      width: 100%;
+      height: 100%;
+    }
     </style>
 </head>
 <body>
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
         <polygon points="0,100 100,50 100,100" fill="#6E51F2"/>
     </svg>
+
+ <svg id="circleSvg" xmlns="http://www.w3.org/2000/svg">
+    <!-- Circle elements will be added by JavaScript -->
+  </svg>
+
+  <script> 
+      // Script for little random bubble circles
+    function updateViewBox() {
+      const svg = document.getElementById('circleSvg');
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const aspect = width / height;
+      
+      // If wider than tall, make height 100 units and adjust width
+      // If taller than wide, make width 100 units and adjust height
+      const viewBoxWidth = aspect >= 1 ? 100 * aspect : 100;
+      const viewBoxHeight = aspect >= 1 ? 100 : 100 / aspect;
+      
+      svg.setAttribute('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+      
+      // Clear existing circles
+      svg.innerHTML = '';
+      
+      // Create 21 circles with the correct distribution
+      const colors = [
+        '#45279B', '#45279B', '#45279B', '#45279B', '#45279B', '#45279B', '#45279B',
+        '#B69BFD', '#B69BFD', '#B69BFD', '#B69BFD', '#B69BFD', '#B69BFD', '#B69BFD',
+        '#6749E7', '#6749E7', '#6749E7', '#6749E7', '#6749E7', '#6749E7', '#6749E7'
+      ];
+      
+      colors.forEach(color => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', `${Math.random() * viewBoxWidth}%`);
+        circle.setAttribute('cy', `${Math.random() * viewBoxHeight}%`);
+        circle.setAttribute('r', `${Math.random() * 0.7 + 0.3}%`); // between 0.3% and 1% of viewport diagonal
+        circle.setAttribute('fill', color);
+        svg.appendChild(circle);
+      });
+    }
+
+    // Update on load and resize
+    window.addEventListener('load', updateViewBox);
+    window.addEventListener('resize', updateViewBox);
+  </script>
+
     <h1>Boatface</h1>
 </body>
 </html>
