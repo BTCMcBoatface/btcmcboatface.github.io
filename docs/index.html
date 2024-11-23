@@ -43,6 +43,8 @@
       height: 100%;
     }
     </style>
+
+
 </head>
 <body>
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -53,8 +55,17 @@
     <!-- Circle elements will be added by JavaScript -->
   </svg>
 
-  <script> 
-      // Script for little random bubble circles
+  <script>
+    
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func(), wait);
+        };
+    }
+    
+
     function updateViewBox() {
       const svg = document.getElementById('circleSvg');
       const width = window.innerWidth;
@@ -90,7 +101,7 @@
 
     // Update on load and resize
     window.addEventListener('load', updateViewBox);
-    window.addEventListener('resize', updateViewBox);
+    window.addEventListener('resize', debounce(updateViewBox, 500)); // 500ms delay
   </script>
 
     <h1>Boatface</h1>
