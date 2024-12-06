@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bitcoin Converter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx.org/1.9.10/htmx.min.js"></script>
+    <link rel="stylesheet" href="converter-styles.css">
+</head>
+<body>
+    <div class="converter-container">
+        <div class="header">
+            <h1 class="converter-title">Bitcoin Converter</h1>
+
+        </div>
+
+        <form hx-post="/convert" hx-target="#conversion-results">
+            <div class="space-y-4">
+                <div id="conversion-results" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="input-group horizontal">
+                            <label>CAD</label>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                id="cad-input" 
+                                name="cad"
+                                inputmode="decimal"
+                            >
+                        </div>
+                        <div class="input-group horizontal">
+                            <label>USD</label>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                id="usd-input" 
+                                name="usd"
+                                inputmode="decimal"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="input-group horizontal">
+                            <label>Sats</label>
+                            <input 
+                                type="number" 
+                                step="1" 
+                                id="sats-input" 
+                                name="sats"
+                                inputmode="decimal"
+                            >
+                        </div>
+                        <div class="input-group horizontal">
+                            <label>Bits (100 sats)</label>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                id="bits-input" 
+                                name="bits"
+                                inputmode="decimal"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="input-group horizontal">
+                        <label>BTC</label>
+                        <input 
+                            type="number" 
+                            step="0.00000001" 
+                            id="btc-input" 
+                            name="btc"
+                            inputmode="decimal"
+                        >
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button 
+                        type="submit" 
+                        class="convert-button"
+                    >
+                        Convert
+                    </button>
+                </div>
+            </div>
+        </form>
+
+            <button 
+                type="button" 
+                class="settings-button"
+                onclick="toggleSettings()"
+            >
+              ... 
+            </button>
+        <div id="settings-panel" class="settings-panel" style="display: none;">
+            <h2>Settings</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="input-group horizontal">
+                    <label>CAD/USD Rate</label>
+                    <input 
+                        type="number" 
+                        step="0.01" 
+                        id="cad-usd-rate" 
+                        name="cad-usd-rate"
+                        inputmode="decimal"
+                        value="1.40"
+                    >
+                </div>
+                <div class="input-group horizontal">
+                    <label>BTC/USD Rate</label>
+                    <input 
+                        type="number" 
+                        step="1" 
+                        id="btc-usd-rate" 
+                        name="btc-usd-rate"
+                        inputmode="decimal"
+                        value="100000"
+                    >
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSettings() {
+            const settingsPanel = document.getElementById('settings-panel');
+            settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Client-side conversion logic
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = {
+                cad: document.getElementById('cad-input'),
+                usd: document.getElementById('usd-input'),
+                sats: document.getElementById('sats-input'),
+                bits: document.getElementById('bits-input'),
+                btc: document.getElementById('btc-input')
+            };
+
+            function convert(sourceType, sourceValue) {
+                const rates = {
+                    cadUsd: parseFloat(document.getElementById('cad-usd-rate').value),
+                    btcUsd: parseFloat(document.getElementById('btc-usd-rate').value)
+                };
+
+                sourceValue = parseFloat(sourceValue);
+                
+                // Convert to USD first
+                let usdValue;
+                switch(sourceType) {
+                    case 'cad':
+                        usdValue = sourceValue / rates.cadUsd;
+                        break;
+                    case 'usd':
+                        usdValue = sourceValue;
+                        break;
+                    case 'sats':
+                        usdValue = (sourceValue / 100000000) * rates.btcUsd;
+                        break;
+                    case 'bits':
+                        usdValue = (sourceValue * 100 / 100000000) * rates.btcUsd;
+                        break;
+                    case 'btc':
+                        usdValue = sourceValue * rates.btcUsd;
+                        break;
+                }
+
+                // Now convert USD to all other units
+                Object.keys(inputs).forEach(key => {
+                    if (key !== sourceType) {
+                        switch(key) {
+                            case 'usd':
+                                inputs[key].value = usdValue.toFixed(2);
+                                break;
+                            case 'cad':
+                                inputs[key].value = (usdValue * rates.cadUsd).toFixed(2);
+                                break;
+                            case 'btc':
+                                inputs[key].value = (usdValue / rates.btcUsd).toFixed(8);
+                                break;
+                            case 'sats':
+                                inputs[key].value = Math.round((usdValue / rates.btcUsd) * 100000000);
+                                break;
+                            case 'bits':
+                                inputs[key].value = ((usdValue / rates.btcUsd) * 100000000 / 100).toFixed(2);
+                                break;
+                        }
+                    }
+                });
+            }
+
+            // Add event listeners to all inputs
+            Object.keys(inputs).forEach(key => {
+                inputs[key].addEventListener('input', function(e) {
+                    if (e.target.value !== '') {
+                        convert(key, e.target.value);
+                    }
+                });
+            });
+
+            // Form submission handler
+            document.querySelector('form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                // Find the first non-empty input and convert
+                for (let key in inputs) {
+                    if (inputs[key].value !== '') {
+                        convert(key, inputs[key].value);
+                        break;
+                    }
+                }
+            });
+        });
+    </script>   
+</body>
+</html>
