@@ -4,67 +4,41 @@
     <meta charset="UTF-8">
     <title>Bitcoin Converter</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx.org/1.9.10/htmx.min.js"></script>
+    <script src="htmx.min.js"></script>
     <link rel="stylesheet" href="converter-styles.css">
+    <script src="https://bits.name/bitsSymbol.js"></script>
+
 </head>
 <body>
     <div class="converter-container">
         <div class="header">
             <h1 class="converter-title">Bitcoin Converter</h1>
-
+            <div class="currency-selector">
+                <select id="currency-selector">
+                    <option value="">Add Currency...</option>
+                    <script>
+                        fetch('currencies.json')
+                            .then(response => response.json())
+                            .then(data => {
+                                const selector = document.getElementById('currency-selector');
+                                data.currencies.forEach(currency => {
+                                    const option = document.createElement('option');
+                                    option.value = currency.code;
+                                    option.textContent = currency.code;
+                                    selector.appendChild(option);
+                                });
+                            });
+                    </script>
+                </select>
+            </div>
         </div>
 
-        <form hx-post="/convert" hx-target="#conversion-results">
-            <div class="space-y-4">
-                <div id="conversion-results" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="input-group horizontal">
-                            <label>CAD</label>
-                            <input 
-                                type="number" 
-                                step="0.01" 
-                                id="cad-input" 
-                                name="cad"
-                                inputmode="decimal"
-                            >
-                        </div>
-                        <div class="input-group horizontal">
-                            <label>USD</label>
-                            <input 
-                                type="number" 
-                                step="0.01" 
-                                id="usd-input" 
-                                name="usd"
-                                inputmode="decimal"
-                            >
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="input-group horizontal">
-                            <label>Sats</label>
-                            <input 
-                                type="number" 
-                                step="1" 
-                                id="sats-input" 
-                                name="sats"
-                                inputmode="decimal"
-                            >
-                        </div>
-                        <div class="input-group horizontal">
-                            <label>Bits (100 sats)</label>
-                            <input 
-                                type="number" 
-                                step="0.01" 
-                                id="bits-input" 
-                                name="bits"
-                                inputmode="decimal"
-                            >
-                        </div>
-                    </div>
-
+        <div class="space-y-4">
+            <div id="conversion-results" class="space-y-4">
+                <!-- Core Units Section (BTC, Bits, Sats, USD) -->
+                <div class="core-units">
                     <div class="input-group horizontal">
-                        <label>BTC</label>
+                        <label>₿ BTC</label>
                         <input 
                             type="number" 
                             step="0.00000001" 
@@ -73,142 +47,246 @@
                             inputmode="decimal"
                         >
                     </div>
-                </div>
-
-                <div class="mt-4">
-                    <button 
-                        type="submit" 
-                        class="convert-button"
-                    >
-                        Convert
-                    </button>
-                </div>
-            </div>
-        </form>
-
-            <button 
-                type="button" 
-                class="settings-button"
-                onclick="toggleSettings()"
-            >
-              ... 
-            </button>
-        <div id="settings-panel" class="settings-panel" style="display: none;">
-            <h2>Settings</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="input-group horizontal">
-                    <label>CAD/USD Rate</label>
-                    <input 
-                        type="number" 
-                        step="0.01" 
-                        id="cad-usd-rate" 
-                        name="cad-usd-rate"
-                        inputmode="decimal"
-                        value="1.40"
-                    >
-                </div>
-                <div class="input-group horizontal">
-                    <label>BTC/USD Rate</label>
-                    <input 
-                        type="number" 
-                        step="1" 
-                        id="btc-usd-rate" 
-                        name="btc-usd-rate"
-                        inputmode="decimal"
-                        value="100000"
-                    >
+                    <div class="input-group horizontal">
+                        <label><i class="Bits-Symbol_tilt"></i> Bits</label>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            id="bits-input" 
+                            name="bits"
+                            inputmode="decimal"
+                        >
+                    </div>
+                    <div class="input-group horizontal">
+                        <label>⚡️ Sats</label>
+                        <input 
+                            type="number" 
+                            step="1" 
+                            id="sats-input" 
+                            name="sats"
+                            inputmode="decimal"
+                        >
+                    </div>
+                    <div class="input-group horizontal">
+                        <label for="usd-input"></label>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            id="usd-input" 
+                            name="usd"
+                            inputmode="decimal"
+                        >
+                    </div>
+                <!-- Additional Currencies Section -->
+                <div id="fiat-inputs" class="space-y-4">
                 </div>
             </div>
         </div>
+
+        <div class="last-updated" id="last-updated"></div>
     </div>
 
     <script>
-        function toggleSettings() {
-            const settingsPanel = document.getElementById('settings-panel');
-            settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+        let exchangeRates = {};
+        let currencyMetadata = {};
+        let activeCurrencies = new Set();
+
+        // Load both exchange rates and currency metadata
+        async function loadData() {
+            try {
+                // Load exchange rates
+                const ratesResponse = await fetch('exchange-rates.json');
+                const ratesData = await ratesResponse.json();
+                exchangeRates = ratesData.rates;
+
+                // Convert Unix timestamp to readable date
+                const lastUpdated = new Date(ratesData.timestamp * 1000); // multiply by 1000 as JS uses milliseconds
+                document.getElementById('last-updated').textContent = 
+                    `Fiat exchange rates last updated: ${lastUpdated.toLocaleString()}`;
+
+                // Load currency metadata
+                const metadataResponse = await fetch('fiat-country-flags.json');
+                const metadataData = await metadataResponse.json();
+                
+                // Load configured currencies
+                const currenciesResponse = await fetch('currencies.json');
+                const currenciesData = await currenciesResponse.json();
+                
+                // Convert array to object for easier lookup
+                currencyMetadata = metadataData.currencies.reduce((acc, curr) => {
+                    acc[curr.code] = curr;
+                    return acc;
+                }, {});
+
+                // Populate currency selector with configured currencies
+                populateCurrencySelector(currenciesData.currencies);
+                initializeCoreUnits();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
         }
 
-        // Client-side conversion logic
-        document.addEventListener('DOMContentLoaded', function() {
-            const inputs = {
-                cad: document.getElementById('cad-input'),
-                usd: document.getElementById('usd-input'),
-                sats: document.getElementById('sats-input'),
-                bits: document.getElementById('bits-input'),
-                btc: document.getElementById('btc-input')
-            };
-
-            function convert(sourceType, sourceValue) {
-                const rates = {
-                    cadUsd: parseFloat(document.getElementById('cad-usd-rate').value),
-                    btcUsd: parseFloat(document.getElementById('btc-usd-rate').value)
-                };
-
-                sourceValue = parseFloat(sourceValue);
-                
-                // Convert to USD first
-                let usdValue;
-                switch(sourceType) {
-                    case 'cad':
-                        usdValue = sourceValue / rates.cadUsd;
-                        break;
-                    case 'usd':
-                        usdValue = sourceValue;
-                        break;
-                    case 'sats':
-                        usdValue = (sourceValue / 100000000) * rates.btcUsd;
-                        break;
-                    case 'bits':
-                        usdValue = (sourceValue * 100 / 100000000) * rates.btcUsd;
-                        break;
-                    case 'btc':
-                        usdValue = sourceValue * rates.btcUsd;
-                        break;
+        function populateCurrencySelector(configuredCurrencies) {
+            const selector = document.getElementById('currency-selector');
+            selector.innerHTML = '<option value="">Add fiat exchange rate</option>';
+            
+            // Sort the currencies alphabetically
+            const sortedCurrencies = [...configuredCurrencies].sort();
+            
+            sortedCurrencies.forEach(code => {
+                if (currencyMetadata[code]) {
+                    const currency = currencyMetadata[code];
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = `${currency.emoji} ${code} (${currency.symbol})`;
+                    selector.appendChild(option);
                 }
+            });
+        }
 
-                // Now convert USD to all other units
-                Object.keys(inputs).forEach(key => {
-                    if (key !== sourceType) {
-                        switch(key) {
-                            case 'usd':
-                                inputs[key].value = usdValue.toFixed(2);
-                                break;
-                            case 'cad':
-                                inputs[key].value = (usdValue * rates.cadUsd).toFixed(2);
-                                break;
-                            case 'btc':
-                                inputs[key].value = (usdValue / rates.btcUsd).toFixed(8);
-                                break;
-                            case 'sats':
-                                inputs[key].value = Math.round((usdValue / rates.btcUsd) * 100000000);
-                                break;
-                            case 'bits':
-                                inputs[key].value = ((usdValue / rates.btcUsd) * 100000000 / 100).toFixed(2);
-                                break;
-                        }
-                    }
-                });
-            }
+        function addCurrencyInput(currencyCode) {
+            if (activeCurrencies.has(currencyCode)) return;
+            
+            const currency = currencyMetadata[currencyCode];
+            if (!currency) return;
 
-            // Add event listeners to all inputs
-            Object.keys(inputs).forEach(key => {
-                inputs[key].addEventListener('input', function(e) {
-                    if (e.target.value !== '') {
-                        convert(key, e.target.value);
-                    }
-                });
+            const fiatInputs = document.getElementById('fiat-inputs');
+            const inputGroup = document.createElement('div');
+            inputGroup.className = 'input-group horizontal';
+            inputGroup.dataset.currency = currencyCode;
+            
+            inputGroup.innerHTML = `
+                <label>${currency.emoji} ${currencyCode} ${currency.symbol}</label>
+                <input 
+                    type="number" 
+                    step="0.01" 
+                    id="${currencyCode.toLowerCase()}-input" 
+                    name="${currencyCode.toLowerCase()}"
+                    inputmode="decimal"
+                >
+                <button type="button" class="remove-currency" onclick="removeCurrency('${currencyCode}')">×</button>
+            `;
+            
+            fiatInputs.appendChild(inputGroup);
+            activeCurrencies.add(currencyCode);
+            
+            // Add event listener for immediate conversion
+            const input = inputGroup.querySelector('input');
+            input.addEventListener('input', function(e) {
+                if (e.target.value !== '') {
+                    convertFromSource(currencyCode.toLowerCase(), parseFloat(e.target.value));
+                }
             });
 
-            // Form submission handler
-            document.querySelector('form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                // Find the first non-empty input and convert
-                for (let key in inputs) {
-                    if (inputs[key].value !== '') {
-                        convert(key, inputs[key].value);
-                        break;
+            // Trigger initial calculation using BTC value
+            const btcInput = document.getElementById('btc-input');
+            if (btcInput.value !== '') {
+                convertFromSource('btc', parseFloat(btcInput.value));
+            }
+        }
+
+        // Update the core units section to include USD with flag and symbol
+        function initializeCoreUnits() {
+            const usdLabel = document.querySelector('label[for="usd-input"]');
+            if (usdLabel && currencyMetadata['USD']) {
+                const usdData = currencyMetadata['USD'];
+                usdLabel.innerHTML = `${usdData.emoji} USD ${usdData.symbol}`;
+            }
+        }
+
+        function convertFromSource(sourceType, value) {
+            // First convert to BTC as our base unit
+            let btcValue;
+            const btcUsdRate = 1 / exchangeRates.BTC;
+
+            // Convert input to BTC
+            switch(sourceType) {
+                case 'btc':
+                    btcValue = value;
+                    break;
+                case 'bits':
+                    btcValue = value / 1000000;
+                    break;
+                case 'sats':
+                    btcValue = value / 100000000;
+                    break;
+                case 'usd':
+                    btcValue = value / btcUsdRate;
+                    break;
+                default:
+                    // Handle other fiat currencies
+                    const sourceRate = exchangeRates[sourceType.toUpperCase()];
+                    const usdValue = value / sourceRate;
+                    btcValue = usdValue / btcUsdRate;
+            }
+
+            // Update all fields based on BTC value
+            updateAllFields(btcValue, sourceType);
+        }
+
+        function updateAllFields(btcValue, sourceType) {
+            const btcUsdRate = 1 / exchangeRates.BTC;
+            const usdValue = btcValue * btcUsdRate;
+
+            // Update core units (skip the source field)
+            if (sourceType !== 'btc') {
+                document.getElementById('btc-input').value = btcValue.toLocaleString('en-US', {
+                    minimumFractionDigits: 8,
+                    maximumFractionDigits: 8
+                });
+            }
+            if (sourceType !== 'bits') {
+                document.getElementById('bits-input').value = (btcValue * 1000000).toFixed(2);
+            }
+            if (sourceType !== 'sats') {
+                document.getElementById('sats-input').value = (btcValue * 100000000).toFixed(0);
+            }
+            if (sourceType !== 'usd') {
+                document.getElementById('usd-input').value = usdValue.toFixed(2);
+            }
+
+            // Update all active fiat currencies
+            activeCurrencies.forEach(currency => {
+                if (currency.toLowerCase() !== sourceType) {
+                    const rate = exchangeRates[currency];
+                    const value = usdValue * rate;
+                    const input = document.getElementById(`${currency.toLowerCase()}-input`);
+                    if (input) {
+                        input.value = value.toFixed(2);
                     }
                 }
+            });
+        }
+
+        function removeCurrency(currency) {
+            const element = document.querySelector(`[data-currency="${currency}"]`);
+            if (element) {
+                element.remove();
+                activeCurrencies.delete(currency);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData().then(() => {
+                initializeCoreUnits();
+                
+                // Add event listeners for core unit inputs
+                ['btc', 'bits', 'sats', 'usd'].forEach(unit => {
+                    document.getElementById(`${unit}-input`).addEventListener('input', function(e) {
+                        if (e.target.value !== '') {
+                            convertFromSource(unit, parseFloat(e.target.value));
+                        }
+                    });
+                });
+
+                // Add currency selector handler
+                document.getElementById('currency-selector').addEventListener('change', function(e) {
+                    if (e.target.value) {
+                        addCurrencyInput(e.target.value);
+                        e.target.value = ''; // Reset selector
+                    }
+                });
             });
         });
     </script>   
