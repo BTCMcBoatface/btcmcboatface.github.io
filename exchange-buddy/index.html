@@ -2,17 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
     <title>Bitcoin Converter</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="htmx.min.js"></script>
     <link rel="stylesheet" href="converter-styles.css">
     <script src="bitsSymbol.js"></script>
-
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --input-bg: #f5f5f5;
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --input-bg: #2d2d2d;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        input {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+    </style>
 </head>
 <body>
     <div class="converter-container">
         <div class="header">
             <h1 class="converter-title">Bitcoin Converter</h1>
+            <button id="theme-toggle" class="theme-toggle">
+                🌓 Toggle Theme
+            </button>
             <div class="currency-selector">
                 <select id="currency-selector">
                     <option value="">Add Currency...</option>
@@ -90,6 +118,7 @@
         let exchangeRates = {};
         let currencyMetadata = {};
         let activeCurrencies = new Set();
+        let currentTheme = 'light';
 
         // Load both exchange rates and currency metadata
         async function loadData() {
@@ -183,6 +212,7 @@
             if (btcInput.value !== '') {
                 convertFromSource('btc', parseFloat(btcInput.value));
             }
+            savePreferences();
         }
 
         // Update the core units section to include USD with flag and symbol
@@ -264,10 +294,62 @@
                 element.remove();
                 activeCurrencies.delete(currency);
             }
+            savePreferences();
+        }
+
+        function savePreferences() {
+            const preferences = {
+                theme: currentTheme,
+                activeCurrencies: Array.from(activeCurrencies)
+            };
+            localStorage.setItem('bitcoinConverterPrefs', JSON.stringify(preferences));
+        }
+
+        function loadPreferences() {
+            const savedPrefs = localStorage.getItem('bitcoinConverterPrefs');
+            if (savedPrefs) {
+                const prefs = JSON.parse(savedPrefs);
+                currentTheme = prefs.theme;
+                setTheme(currentTheme);
+                
+                // Restore active currencies
+                if (prefs.activeCurrencies) {
+                    prefs.activeCurrencies.forEach(currency => {
+                        addCurrencyInput(currency);
+                    });
+                }
+            }
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            currentTheme = theme;
+            savePreferences();
         }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            // Register service worker for PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            }
+
+            // Theme toggle functionality
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.addEventListener('click', () => {
+                currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+                setTheme(currentTheme);
+            });
+
+            // Load saved preferences
+            loadPreferences();
+            
             loadData().then(() => {
                 initializeCoreUnits();
                 
