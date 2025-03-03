@@ -223,23 +223,23 @@ select:-moz-focusring {
     }
 
     .converter-container {
-        background-color: #000000 !important;  /* Black background with !important */
-        color: #ffffff !important;  /* White text with !important */
+        background-color: #000000;  /* Remove !important */
+        color: #ffffff;  /* Remove !important */
     }
 
     .converter-title {
-        color: #ffffff !important;  /* White text */
+        color: #ffffff;  /* Remove !important */
     }
 
     label {
-        color: #ffffff !important;  /* White text */
+        color: #ffffff;  /* Remove !important */
     }
 
     input {
-        background-color: #333333;  /* Dark grey input fields */
-        color: #ffffff;  /* White text */
+        background-color: #333333;
+        color: #ffffff;
         border-color: #666666;
-        min-width: 120px;  /* Minimum width for 7+ digits */
+        min-width: 120px;
     }
 
     select {
