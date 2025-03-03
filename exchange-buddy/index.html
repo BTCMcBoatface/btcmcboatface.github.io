@@ -159,8 +159,10 @@
             const selector = document.getElementById('currency-selector');
             selector.innerHTML = '<option value="">Add fiat exchange rate</option>';
             
-            // Sort the currencies alphabetically
-            const sortedCurrencies = [...configuredCurrencies].sort();
+            // Sort the currencies alphabetically and filter out CAD
+            const sortedCurrencies = [...configuredCurrencies]
+                .filter(code => code !== 'CAD')
+                .sort();
             
             sortedCurrencies.forEach(code => {
                 if (currencyMetadata[code]) {
@@ -217,11 +219,15 @@
 
         // Update the core units section to include USD with flag and symbol
         function initializeCoreUnits() {
+            // Set up USD label
             const usdLabel = document.querySelector('label[for="usd-input"]');
             if (usdLabel && currencyMetadata['USD']) {
                 const usdData = currencyMetadata['USD'];
                 usdLabel.innerHTML = `${usdData.emoji} USD ${usdData.symbol}`;
             }
+            
+            // Add CAD as default currency
+            addCurrencyInput('CAD');
         }
 
         function convertFromSource(sourceType, value) {
@@ -315,7 +321,10 @@
                 // Restore active currencies
                 if (prefs.activeCurrencies) {
                     prefs.activeCurrencies.forEach(currency => {
-                        addCurrencyInput(currency);
+                        // Only add if it's not CAD (since CAD is added by default)
+                        if (currency !== 'CAD') {
+                            addCurrencyInput(currency);
+                        }
                     });
                 }
             }
