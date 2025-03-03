@@ -2,7 +2,7 @@
     "name": "Bitcoin Converter",
     "short_name": "BTC Convert",
     "description": "A Bitcoin conversion calculator",
-    "start_url": "/",
+    "start_url": "/exchange-buddy/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#ffffff",
