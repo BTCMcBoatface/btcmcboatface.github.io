@@ -219,20 +219,22 @@ select:-moz-focusring {
     }
 
     .converter-container {
-        background-color: #000000;  /* Black background */
+        background-color: #000000 !important;  /* Black background with !important */
+        color: #ffffff !important;  /* White text with !important */
     }
 
     .converter-title {
-        color: #ffffff;  /* White text */
+        color: #ffffff !important;  /* White text */
     }
 
     label {
-        color: #ffffff;  /* White text */
+        color: #ffffff !important;  /* White text */
     }
 
     input {
         background-color: #333333;  /* Dark grey input fields */
         color: #ffffff;  /* White text */
+        border-color: #666666;
         min-width: 120px;  /* Minimum width for 7+ digits */
     }
 
