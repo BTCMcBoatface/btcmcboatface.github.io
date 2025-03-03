@@ -1,92 +1,69 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
 
 body {
+    background-color: #1a1a1a;
+    color: #ffffff;
     font-family: 'Inter', sans-serif;
-    background-color: #f4f4f4;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
     margin: 0;
-    padding: 20px;
-    box-sizing: border-box;
+    padding: 0;
 }
 
 .converter-container {
-    background-color: white;
-    color: #333;
-    border: 8px solid #ff6600; /* Vibrant orange border */
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    padding: 40px;
-    margin: 20px;
+    background-color: #000000;
+    border: 8px solid #ff6600;
+    padding: 2rem;
     max-width: 600px;
-    width: 100%;
+    margin: 2rem auto;
+}
+
+/* Make container full width on mobile */
+@media (max-width: 640px) {
+    .converter-container {
+        margin: 0;
+        border-width: 8px 0;  /* Only keep top/bottom border on mobile */
+        padding: 1rem;
+    }
 }
 
 .converter-title {
-    font-size: 2.5rem;
-    font-weight: 600;
-    color: #333;
-    text-align: center;
-    margin-bottom: 30px;
+    color: #ffffff;
+    margin-bottom: 1.5rem;
+}
+
+label {
+    color: #ffffff;
+}
+
+input {
+    background-color: #333333;
+    color: #ffffff;
+    border: 1px solid #666666;
+    border-radius: 4px;
+    padding: 0.5rem;
+    min-width: 100px;  /* Reduced from 120px */
+    font-size: 1rem;
+}
+
+select {
+    background-color: #333333;
+    color: #ffffff;
+    border: 1px solid #666666;
+    border-radius: 4px;
+    padding: 0.5rem;
+    font-size: 1rem;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.remove-currency {
+    color: #ffffff;
+}
+
+.remove-currency:hover {
+    color: #ff4444;
 }
 
 .input-group {
     margin-bottom: 20px;
-}
-
-label {
-    font-size: 1.5rem;
-    color: #666;
-    margin-bottom: 8px;
-    display: block;
-    white-space: nowrap;
-}
-
-input {
-    width: 100%;
-    font-size: 1.8rem;
-    padding: 12px;
-    background-color: white;
-    color: #333;
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    transition: border-color 0.3s ease;
-}
-
-input:focus {
-    outline: none;
-    border-color: #ff6600;
-    box-shadow: 0 0 0 3px rgba(255,102,0,0.2);
-}
-
-.convert-button {
-    width: 100%;
-    padding: 15px;
-    background-color: #ff6600;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1.25rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.convert-button:hover {
-    background-color: #e55c00;
-}
-
-@media (max-width: 600px) {
-    .converter-container {
-        margin: 10px;
-        padding: 20px;
-    }
-    
-    .converter-title {
-        font-size: 2rem;
-    }
 }
 
 .input-group.horizontal {
@@ -120,34 +97,6 @@ input[type="number"] {
     margin: 1rem 0;
 }
 
-.remove-currency {
-    padding: 0 0.5rem;
-    color: #666;
-    font-size: 2.4rem;
-    cursor: pointer;
-    border: none;
-    background: none;
-}
-
-.remove-currency:hover {
-    color: #ff4444;
-}
-
-.input-group.horizontal {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.input-group.horizontal label {
-    flex: 0 0 180px;
-    min-width: 180px;
-}
-
-.input-group.horizontal input {
-    flex: 1;
-}
-
 .bitcoin-units {
     border-bottom: 1px solid #eee;
     padding-bottom: 1rem;
@@ -177,26 +126,6 @@ input[type="number"] {
 }
 
 /* Update select element styles for a minimalist look */
-select {
-    font-size: 1.5rem;
-    padding: 12px;
-    background-color: white;
-    color: #333;
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    appearance: none; /* Removes native styling */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    cursor: pointer;
-    width: 100%;
-    position: relative;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 1.5em;
-    padding-right: 2.5em;
-}
-
 select:focus {
     outline: none;
     border-color: #ff6600;
