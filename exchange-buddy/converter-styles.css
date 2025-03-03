@@ -11,16 +11,18 @@ body {
 .converter-container {
     background-color: #000000;
     border: 8px solid #ff6600;
+    border-radius: 8px;
     padding: 2rem;
     max-width: 600px;
     margin: 2rem auto;
 }
 
-/* Make container full width on mobile */
+/* Make container full width on mobile but keep top/bottom rounded corners */
 @media (max-width: 640px) {
     .converter-container {
         margin: 0;
-        border-width: 8px 0;  /* Only keep top/bottom border on mobile */
+        border-width: 8px 0;
+        border-radius: 0;
         padding: 1rem;
     }
 }
@@ -52,6 +54,13 @@ select {
     padding: 0.5rem;
     font-size: 1rem;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1em;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-right: 2rem;
 }
 
 .remove-currency {
