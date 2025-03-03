@@ -21,7 +21,7 @@ body {
 @media (max-width: 640px) {
     .converter-container {
         margin: 0;
-        border-width: 8px 0;
+        border-width: 28px 0;
         border-radius: 0;
         padding: 1rem;
     }
