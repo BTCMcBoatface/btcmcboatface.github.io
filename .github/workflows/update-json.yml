@@ -14,12 +14,14 @@ jobs:
       - name: Fetch updated exchange rates
         run: curl -o exchange-buddy/exchange-rates.json "https://openexchangerates.org/api/latest.json?app_id=9e8758e579764588b31526133e124573"
 
+
       - name: Commit and push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
           git add exchange-buddy/exchange-rates.json
           git commit -m "Automated exchange rates update" || exit 0
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
