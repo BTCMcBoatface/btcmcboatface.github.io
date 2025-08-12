@@ -2,8 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bitcoin Converter (Functional, No Design)</title>
+  <title>Bitcoin Converter (Responsive, Bugfixed)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Responsive table styles */
+    .responsive-table-container {
+      overflow-x: auto;
+      width: 100%;
+      max-width: 100vw;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 420px;
+    }
+    th, td {
+      padding: 0.5em 0.7em;
+      text-align: left;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    @media (max-width: 700px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead tr {
+        display: none;
+      }
+      tr {
+        margin-bottom: 1em;
+        border-bottom: 2px solid #eee;
+      }
+      td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50%;
+      }
+      td:before {
+        position: absolute;
+        left: 0.7em;
+        width: 45%;
+        white-space: nowrap;
+        font-weight: bold;
+        content: attr(data-label);
+      }
+      td:last-child {
+        border-bottom: none;
+      }
+    }
+  </style>
 </head>
 <body>
   <h1>Bitcoin Converter</h1>
@@ -15,7 +63,7 @@
   </select>
 
   <!-- Future prediction toggle -->
-  <label>
+  <label style="margin-left:1em;">
     <input type="checkbox" id="show-future-checkbox">
     Show Future Prediction
   </label>
@@ -29,30 +77,32 @@
   </div>
 
   <!-- Conversion table -->
-  <table id="conversion-table" border="1" cellspacing="0" cellpadding="4">
-    <thead>
-      <tr>
-        <th>Unit/Currency</th>
-        <th>Current</th>
-        <th id="future-th" style="display:none;">Future</th>
-        <th>Remove</th>
-      </tr>
-    </thead>
-    <tbody id="conversion-table-body">
-      <!-- Rows will be populated by JS -->
-    </tbody>
-  </table>
+  <div class="responsive-table-container">
+    <table id="conversion-table">
+      <thead>
+        <tr>
+          <th>Unit/Currency</th>
+          <th>Current</th>
+          <th id="future-th" style="display:none;">Future</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody id="conversion-table-body">
+        <!-- Rows will be populated by JS -->
+      </tbody>
+    </table>
+  </div>
 
-  <div id="last-updated"></div>
+  <div id="last-updated" style="margin-top:1em;font-size:0.95em;color:#555;"></div>
 
   <script>
     // --- Data storage ---
     let exchangeRates = {};
     let currencyMetadata = {};
     let currenciesConfig = [];
-    let activeCurrencies = []; // Array for order
-    let futureRates = {}; // { currencyCode: rate }
-    let currentFutureCurrency = null; // For the future dropdown
+    let activeCurrencies = [];
+    let futureRates = {};
+    let currentFutureCurrency = null;
 
     // --- Core units ---
     const coreUnits = [
@@ -62,22 +112,18 @@
       { key: 'usd', label: 'USD', symbol: '', step: '0.01' }
     ];
 
-    // --- Utility functions ---
     function getInputId(key, future = false) {
       return `${key}-input${future ? '-future' : ''}`;
     }
-
     function getCurrencyLabel(code) {
       const data = currencyMetadata[code];
       return data ? `${data.emoji || ''} ${code} ${data.symbol || ''}` : code;
     }
-
     function getCurrencySymbol(code) {
       const data = currencyMetadata[code];
       return data ? data.symbol || '' : '';
     }
 
-    // --- Initialization ---
     async function loadData() {
       // Load exchange rates
       const ratesRes = await fetch('exchange-rates.json');
@@ -104,12 +150,13 @@
       populateCurrencySelector();
       renderFutureCurrencySelector();
       renderTable();
+      recalculateAll();
+      updateFutureControls();
     }
 
     function populateCurrencySelector() {
       const selector = document.getElementById('currency-selector');
       selector.innerHTML = '<option value="">Select currency...</option>';
-      // Show all config currencies, even CAD
       currenciesConfig.slice().sort().forEach(code => {
         const label = getCurrencyLabel(code);
         const option = document.createElement('option');
@@ -122,7 +169,6 @@
     function renderFutureCurrencySelector() {
       const sel = document.getElementById('future-currency-selector');
       sel.innerHTML = '';
-      // Only show currencies that are visible
       activeCurrencies.forEach(code => {
         const opt = document.createElement('option');
         opt.value = code;
@@ -134,32 +180,30 @@
         currentFutureCurrency = activeCurrencies[0] || null;
       }
       sel.value = currentFutureCurrency;
-      // Set symbol
       document.getElementById('future-rate-symbol').textContent =
         currentFutureCurrency ? getCurrencySymbol(currentFutureCurrency) + ' per 1 BTC' : '';
-      // Set input value
       document.getElementById('future-rate-input').value =
         currentFutureCurrency && futureRates[currentFutureCurrency]
           ? futureRates[currentFutureCurrency]
           : '';
     }
 
-    // --- Table Rendering ---
     function renderTable() {
       const tbody = document.getElementById('conversion-table-body');
       tbody.innerHTML = '';
-      // Render core units
       coreUnits.forEach(unit => {
         const tr = document.createElement('tr');
         // Label
         const tdLabel = document.createElement('td');
         tdLabel.textContent = unit.symbol ? `${unit.symbol} ${unit.label}` : unit.label;
+        tdLabel.setAttribute('data-label', 'Unit/Currency');
         tr.appendChild(tdLabel);
         // Current input
         const tdCurrent = document.createElement('td');
         tdCurrent.appendChild(
           createInputField(unit.key, false, unit.step, unit.label)
         );
+        tdCurrent.setAttribute('data-label', 'Current');
         tr.appendChild(tdCurrent);
         // Future output (no label)
         const tdFuture = document.createElement('td');
@@ -167,53 +211,54 @@
         tdFuture.appendChild(
           createInputField(unit.key, true, unit.step, unit.label, true)
         );
+        tdFuture.setAttribute('data-label', 'Future');
         tr.appendChild(tdFuture);
         // Remove (not for core units)
-        tr.appendChild(document.createElement('td'));
+        const tdRemove = document.createElement('td');
+        tdRemove.setAttribute('data-label', 'Remove');
+        tr.appendChild(tdRemove);
         tbody.appendChild(tr);
       });
-      // Render each active fiat currency
       activeCurrencies.forEach(code => {
-        // Don't repeat USD (already in core units)
         if (code === 'USD') return;
         const tr = document.createElement('tr');
-        // Label
         const tdLabel = document.createElement('td');
         tdLabel.textContent = getCurrencyLabel(code);
+        tdLabel.setAttribute('data-label', 'Unit/Currency');
         tr.appendChild(tdLabel);
-        // Current input
         const tdCurrent = document.createElement('td');
         tdCurrent.appendChild(
           createInputField(code.toLowerCase(), false, '0.01', code)
         );
+        tdCurrent.setAttribute('data-label', 'Current');
         tr.appendChild(tdCurrent);
-        // Future output
         const tdFuture = document.createElement('td');
         tdFuture.style.display = showFuture() ? '' : 'none';
         tdFuture.appendChild(
           createInputField(code.toLowerCase(), true, '0.01', code, true)
         );
+        tdFuture.setAttribute('data-label', 'Future');
         tr.appendChild(tdFuture);
-        // Remove button
         const tdRemove = document.createElement('td');
+        tdRemove.setAttribute('data-label', 'Remove');
         if (code !== 'CAD') {
           const btn = document.createElement('button');
           btn.textContent = '×';
           btn.setAttribute('aria-label', `Remove ${code}`);
           btn.onclick = () => {
             activeCurrencies = activeCurrencies.filter(c => c !== code);
-            // Remove future rate if present
             delete futureRates[code];
-            renderFutureCurrencySelector();
-            renderTable();
-            recalculateAll();
+            if (currentFutureCurrency === code) {
+              currentFutureCurrency = activeCurrencies[0] || null;
+            }
+            savePreferences();
+            updateAll();
           };
           tdRemove.appendChild(btn);
         }
         tr.appendChild(tdRemove);
         tbody.appendChild(tr);
       });
-      // Show/hide future column header
       document.getElementById('future-th').style.display = showFuture() ? '' : 'none';
     }
 
@@ -225,7 +270,6 @@
       input.name = getInputId(key, future);
       input.setAttribute('aria-label', (future ? 'Future ' : 'Current ') + label);
       input.readOnly = !!readOnly;
-      // Only current inputs trigger recalculation
       if (!future && !readOnly) {
         input.addEventListener('input', (e) => {
           if (e.target.value !== '') {
@@ -236,25 +280,18 @@
       return input;
     }
 
-    // --- Event Handlers ---
     document.getElementById('currency-selector').addEventListener('change', function(e) {
       const code = e.target.value;
       if (code && !activeCurrencies.includes(code)) {
         activeCurrencies.push(code);
-        renderFutureCurrencySelector();
-        renderTable();
-        recalculateAll();
+        savePreferences();
+        updateAll();
       }
       e.target.value = '';
     });
 
     document.getElementById('show-future-checkbox').addEventListener('change', function() {
-      document.getElementById('future-th').style.display =
-        this.checked ? '' : 'none';
-      document.getElementById('future-rate-row').style.display =
-        (this.checked && activeCurrencies.length > 0) ? '' : 'none';
-      renderTable();
-      recalculateAll();
+      updateAll();
     });
 
     document.getElementById('future-currency-selector').addEventListener('change', function(e) {
@@ -277,13 +314,11 @@
       }
     });
 
-    // --- Conversion logic ---
     function showFuture() {
       return document.getElementById('show-future-checkbox').checked;
     }
 
     function convertFromSource(sourceKey, value) {
-      // Convert value to BTC
       let btcValue;
       if (sourceKey === 'btc') {
         btcValue = value;
@@ -294,7 +329,6 @@
       } else if (sourceKey === 'usd') {
         btcValue = value / (1 / exchangeRates['BTC']);
       } else {
-        // fiat
         const upper = sourceKey.toUpperCase();
         const rateUsd = exchangeRates[upper];
         if (!rateUsd) return;
@@ -305,16 +339,12 @@
     }
 
     function recalculateAll(btcValueOverride = null, skipKey = null) {
-      // Determine BTC value
       let btcValue = btcValueOverride;
-      // If no override, try to get from BTC input
       if (btcValue == null) {
         const v = document.getElementById(getInputId('btc')).value;
         btcValue = v ? parseFloat(v) : 0;
       }
-      // --- CORE UNITS ---
       coreUnits.forEach(unit => {
-        // Skip updating the field that was just input
         if (skipKey === unit.key) return;
         let val = '';
         if (unit.key === 'btc') {
@@ -332,7 +362,6 @@
                 ? val.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })
                 : val.toFixed(unit.key === 'usd' ? 2 : 0))
             : '';
-        // Future column
         if (showFuture()) {
           let futureVal = '';
           let futureRate = null;
@@ -343,7 +372,6 @@
           } else if (unit.key === 'sats') {
             futureVal = btcValue * 1e8;
           } else if (unit.key === 'usd') {
-            // Use future rate if set
             futureRate = futureRates['USD'];
             if (futureRate) {
               futureVal = btcValue * futureRate;
@@ -359,11 +387,9 @@
               : '';
         }
       });
-      // --- FIAT CURRENCIES ---
       activeCurrencies.forEach(code => {
         const key = code.toLowerCase();
-        if (key === 'usd') return; // already handled above
-        // Skip updating the field that was just input
+        if (key === 'usd') return;
         if (skipKey === key) return;
         const rate = exchangeRates[code];
         if (!rate) return;
@@ -373,7 +399,6 @@
           typeof currentVal === 'number' && !isNaN(currentVal)
             ? currentVal.toFixed(2)
             : '';
-        // Future column
         if (showFuture()) {
           let futureVal = '';
           let futureRate = futureRates[code];
@@ -390,14 +415,20 @@
       });
     }
 
-    // --- Show/hide future controls as needed ---
     function updateFutureControls() {
       const row = document.getElementById('future-rate-row');
       row.style.display =
         showFuture() && activeCurrencies.length > 0 ? '' : 'none';
     }
 
-    // --- Load preferences (if any) ---
+    function updateAll() {
+      populateCurrencySelector();
+      renderFutureCurrencySelector();
+      renderTable();
+      recalculateAll();
+      updateFutureControls();
+    }
+
     function loadPreferences() {
       const saved = localStorage.getItem('bitcoinConverterPrefs');
       if (saved) {
@@ -417,28 +448,12 @@
       }));
     }
 
-    // --- Initial setup ---
     document.addEventListener('DOMContentLoaded', async function() {
       loadPreferences();
       await loadData();
       document.getElementById('show-future-checkbox').checked = false;
-      updateFutureControls();
-      renderTable();
-      recalculateAll();
-
-      // Save prefs on currency change
-      const saveAndRender = () => {
-        savePreferences();
-        renderFutureCurrencySelector();
-        renderTable();
-        recalculateAll();
-        updateFutureControls();
-      };
-      // Listen for changes to active currencies
-      const observer = new MutationObserver(saveAndRender);
-      observer.observe(document.getElementById('conversion-table-body'), { childList: true, subtree: true });
+      updateAll();
     });
-
   </script>
 </body>
 </html>
