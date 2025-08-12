@@ -5,7 +5,6 @@
   <title>Bitcoin Converter (Responsive, Bugfixed)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Responsive table styles */
     .responsive-table-container {
       overflow-x: auto;
       width: 100%;
@@ -56,19 +55,16 @@
 <body>
   <h1>Bitcoin Converter</h1>
 
-  <!-- Currency selector -->
   <label for="currency-selector">Add fiat exchange rate:</label>
   <select id="currency-selector">
     <option value="">Select currency...</option>
   </select>
 
-  <!-- Future prediction toggle -->
   <label style="margin-left:1em;">
     <input type="checkbox" id="show-future-checkbox">
     Show Future Prediction
   </label>
 
-  <!-- Future rate selector (shows only if prediction is on and at least one fiat is present) -->
   <div id="future-rate-row" style="display:none; margin: 1em 0;">
     <label for="future-currency-selector">Set future rate for: </label>
     <select id="future-currency-selector"></select>
@@ -76,7 +72,6 @@
     <span id="future-rate-symbol"></span>
   </div>
 
-  <!-- Conversion table -->
   <div class="responsive-table-container">
     <table id="conversion-table">
       <thead>
@@ -87,9 +82,7 @@
           <th>Remove</th>
         </tr>
       </thead>
-      <tbody id="conversion-table-body">
-        <!-- Rows will be populated by JS -->
-      </tbody>
+      <tbody id="conversion-table-body"></tbody>
     </table>
   </div>
 
@@ -103,6 +96,19 @@
     let activeCurrencies = [];
     let futureRates = {};
     let currentFutureCurrency = null;
+
+    // --- Cookie utils ---
+    function setCookie(name, value, days = 365) {
+      // Best practice: 1 year for preferences, SameSite=Lax, path=/
+      const expires = new Date(Date.now() + days*24*60*60*1000).toUTCString();
+      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+    }
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+      return null;
+    }
 
     // --- Core units ---
     const coreUnits = [
@@ -143,9 +149,6 @@
       const configRes = await fetch('currencies.json');
       const configData = await configRes.json();
       currenciesConfig = configData.currencies;
-
-      // Setup CAD by default
-      if (!activeCurrencies.includes('CAD')) activeCurrencies.unshift('CAD');
 
       populateCurrencySelector();
       renderFutureCurrencySelector();
@@ -193,19 +196,16 @@
       tbody.innerHTML = '';
       coreUnits.forEach(unit => {
         const tr = document.createElement('tr');
-        // Label
         const tdLabel = document.createElement('td');
         tdLabel.textContent = unit.symbol ? `${unit.symbol} ${unit.label}` : unit.label;
         tdLabel.setAttribute('data-label', 'Unit/Currency');
         tr.appendChild(tdLabel);
-        // Current input
         const tdCurrent = document.createElement('td');
         tdCurrent.appendChild(
           createInputField(unit.key, false, unit.step, unit.label)
         );
         tdCurrent.setAttribute('data-label', 'Current');
         tr.appendChild(tdCurrent);
-        // Future output (no label)
         const tdFuture = document.createElement('td');
         tdFuture.style.display = showFuture() ? '' : 'none';
         tdFuture.appendChild(
@@ -213,7 +213,6 @@
         );
         tdFuture.setAttribute('data-label', 'Future');
         tr.appendChild(tdFuture);
-        // Remove (not for core units)
         const tdRemove = document.createElement('td');
         tdRemove.setAttribute('data-label', 'Remove');
         tr.appendChild(tdRemove);
@@ -241,21 +240,19 @@
         tr.appendChild(tdFuture);
         const tdRemove = document.createElement('td');
         tdRemove.setAttribute('data-label', 'Remove');
-        if (code !== 'CAD') {
-          const btn = document.createElement('button');
-          btn.textContent = '×';
-          btn.setAttribute('aria-label', `Remove ${code}`);
-          btn.onclick = () => {
-            activeCurrencies = activeCurrencies.filter(c => c !== code);
-            delete futureRates[code];
-            if (currentFutureCurrency === code) {
-              currentFutureCurrency = activeCurrencies[0] || null;
-            }
-            savePreferences();
-            updateAll();
-          };
-          tdRemove.appendChild(btn);
-        }
+        const btn = document.createElement('button');
+        btn.textContent = '×';
+        btn.setAttribute('aria-label', `Remove ${code}`);
+        btn.onclick = () => {
+          activeCurrencies = activeCurrencies.filter(c => c !== code);
+          delete futureRates[code];
+          if (currentFutureCurrency === code) {
+            currentFutureCurrency = activeCurrencies[0] || null;
+          }
+          savePreferences();
+          updateAll();
+        };
+        tdRemove.appendChild(btn);
         tr.appendChild(tdRemove);
         tbody.appendChild(tr);
       });
@@ -300,6 +297,7 @@
         currentFutureCurrency ? getCurrencySymbol(currentFutureCurrency) + ' per 1 BTC' : '';
       document.getElementById('future-rate-input').value =
         futureRates[currentFutureCurrency] || '';
+      recalculateAll();
     });
 
     document.getElementById('future-rate-input').addEventListener('input', function(e) {
@@ -344,6 +342,27 @@
         const v = document.getElementById(getInputId('btc')).value;
         btcValue = v ? parseFloat(v) : 0;
       }
+
+      // --- Calculate the "future multiplier" ---
+      let futureMultiplier = 1;
+      // Only apply if future is shown and a future rate is set for selected currency
+      if (
+        showFuture() &&
+        currentFutureCurrency &&
+        futureRates[currentFutureCurrency] &&
+        typeof exchangeRates[currentFutureCurrency] !== "undefined"
+      ) {
+        // Calculate what 1 BTC is in the selected currency now and in the future
+        const nowRate = exchangeRates[currentFutureCurrency]; // USD per 1 unit of selected fiat
+        const usdPerBtc = 1 / exchangeRates['BTC'];
+        const nowFiatPerBtc = usdPerBtc * nowRate;
+        const futureFiatPerBtc = futureRates[currentFutureCurrency];
+        if (nowFiatPerBtc > 0) {
+          futureMultiplier = futureFiatPerBtc / nowFiatPerBtc;
+        }
+      }
+
+      // --- CORE UNITS ---
       coreUnits.forEach(unit => {
         if (skipKey === unit.key) return;
         let val = '';
@@ -362,9 +381,10 @@
                 ? val.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })
                 : val.toFixed(unit.key === 'usd' ? 2 : 0))
             : '';
+
+        // Future: apply multiplier for ALL fiat (including USD), and display future BTC, bits, sats in same ratio
         if (showFuture()) {
           let futureVal = '';
-          let futureRate = null;
           if (unit.key === 'btc') {
             futureVal = btcValue;
           } else if (unit.key === 'bits') {
@@ -372,12 +392,8 @@
           } else if (unit.key === 'sats') {
             futureVal = btcValue * 1e8;
           } else if (unit.key === 'usd') {
-            futureRate = futureRates['USD'];
-            if (futureRate) {
-              futureVal = btcValue * futureRate;
-            } else {
-              futureVal = btcValue * (1 / exchangeRates['BTC']);
-            }
+            // Apply multiplier to fiat value (even for USD)
+            futureVal = btcValue * (1 / exchangeRates['BTC']) * futureMultiplier;
           }
           document.getElementById(getInputId(unit.key, true)).value =
             typeof futureVal === 'number' && !isNaN(futureVal)
@@ -387,6 +403,7 @@
               : '';
         }
       });
+
       activeCurrencies.forEach(code => {
         const key = code.toLowerCase();
         if (key === 'usd') return;
@@ -400,13 +417,8 @@
             ? currentVal.toFixed(2)
             : '';
         if (showFuture()) {
-          let futureVal = '';
-          let futureRate = futureRates[code];
-          if (futureRate) {
-            futureVal = btcValue * futureRate;
-          } else {
-            futureVal = usdValue * rate;
-          }
+          // Apply the same multiplier to ALL fiat currencies
+          const futureVal = currentVal * futureMultiplier;
           document.getElementById(getInputId(key, true)).value =
             typeof futureVal === 'number' && !isNaN(futureVal)
               ? futureVal.toFixed(2)
@@ -430,22 +442,21 @@
     }
 
     function loadPreferences() {
-      const saved = localStorage.getItem('bitcoinConverterPrefs');
+      const saved = getCookie('bitcoinConverterPrefs');
       if (saved) {
         try {
           const prefs = JSON.parse(saved);
           if (Array.isArray(prefs.activeCurrencies)) {
             activeCurrencies = prefs.activeCurrencies.slice();
-            if (!activeCurrencies.includes('CAD')) activeCurrencies.unshift('CAD');
           }
         } catch {}
       }
     }
 
     function savePreferences() {
-      localStorage.setItem('bitcoinConverterPrefs', JSON.stringify({
+      setCookie('bitcoinConverterPrefs', JSON.stringify({
         activeCurrencies
-      }));
+      }), 365);
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
