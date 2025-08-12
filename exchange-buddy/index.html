@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bitcoin Converter (Responsive, Bugfixed)</title>
+  <title>Bitcoin Converter (Responsive, State-Preserving)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     .responsive-table-container {
@@ -50,7 +50,20 @@
         border-bottom: none;
       }
     }
+    /* Try to restore Bits symbol styling (fallback if not found) */
+    .Bits-Symbol_tilt {
+      font-family: 'Inter', 'Arial', sans-serif;
+      font-style: normal;
+      font-weight: bold;
+      display: inline-block;
+      transform: rotate(-10deg);
+      font-size: 1.1em;
+      vertical-align: middle;
+      letter-spacing: -1px;
+    }
   </style>
+  <!-- Attempt to load bitsSymbol.js for Bits icon if it exists -->
+  <script src="bitsSymbol.js"></script>
 </head>
 <body>
   <h1>Bitcoin Converter</h1>
@@ -112,21 +125,17 @@
     // --- Core units ---
     const coreUnits = [
       { key: 'btc', label: 'BTC', symbol: '₿', step: '0.00000001' },
-      { key: 'bits', label: 'Bits', symbol: '', step: '0.01' },
-      { key: 'sats', label: 'Sats', symbol: '', step: '1' }
-      // USD, CAD, EUR moved to fiat rendering below
+      { key: 'bits', label: 'Bits', symbol: '<i class="Bits-Symbol_tilt">Ƀ</i>', step: '0.01' },
+      { key: 'sats', label: 'Sats', symbol: '', step: '1' },
+      { key: 'usd', label: 'USD', symbol: '', step: '0.01' }
     ];
-
-    // --- Default fiat currencies (in order) ---
-    const defaultFiats = ['USD', 'CAD', 'EUR'];
 
     function getInputId(key, future = false) {
       return `${key}-input${future ? '-future' : ''}`;
     }
     function getCurrencyLabel(code) {
       const data = currencyMetadata[code];
-      // Show emoji, code, and symbol if present
-      return data ? `${data.emoji ? data.emoji + ' ' : ''}${code} ${data.symbol || ''}`.trim() : code;
+      return data ? `${data.emoji || ''} ${code} ${data.symbol || ''}` : code;
     }
     function getCurrencySymbol(code) {
       const data = currencyMetadata[code];
@@ -134,7 +143,6 @@
     }
 
     async function loadData() {
-      // Load exchange rates
       const ratesRes = await fetch('exchange-rates.json');
       const ratesData = await ratesRes.json();
       exchangeRates = ratesData.rates;
@@ -142,18 +150,15 @@
       document.getElementById('last-updated').textContent =
         `Fiat exchange rates last updated: ${lastUpdated.toLocaleString()}`;
 
-      // Load metadata
       const metaRes = await fetch('fiat-country-flags.json');
       const metaData = await metaRes.json();
       currencyMetadata = {};
       metaData.currencies.forEach(c => { currencyMetadata[c.code] = c; });
 
-      // Load configured currencies
       const configRes = await fetch('currencies.json');
       const configData = await configRes.json();
       currenciesConfig = configData.currencies;
 
-      ensureDefaultFiats();
       populateCurrencySelector();
       renderFutureCurrencySelector();
       renderTable();
@@ -161,34 +166,10 @@
       updateFutureControls();
     }
 
-    // --- Ensure USD, CAD, EUR are always present (in order) ---
-    function ensureDefaultFiats() {
-      // Only add if not present, and always at the correct order at start
-      let newActive = [];
-      defaultFiats.forEach(code => {
-        if (!activeCurrencies.includes(code)) newActive.push(code);
-      });
-      // Remove any existing USD/CAD/EUR not at start, and keep the rest of user's list
-      activeCurrencies = [
-        ...defaultFiats.filter(code => activeCurrencies.includes(code)),
-        ...activeCurrencies.filter(c => !defaultFiats.includes(c))
-      ];
-      // Add new ones (for first load)
-      newActive.forEach(code => activeCurrencies.unshift(code));
-      // Clean up: only unique, in order: USD, CAD, EUR, then other user-added
-      activeCurrencies = [...new Set([
-        ...defaultFiats,
-        ...activeCurrencies.filter(c => !defaultFiats.includes(c))
-      ])];
-      savePreferences();
-    }
-
     function populateCurrencySelector() {
       const selector = document.getElementById('currency-selector');
       selector.innerHTML = '<option value="">Select currency...</option>';
       currenciesConfig.slice().sort().forEach(code => {
-        // Don't show if already active
-        if (activeCurrencies.includes(code)) return;
         const label = getCurrencyLabel(code);
         const option = document.createElement('option');
         option.value = code;
@@ -206,7 +187,6 @@
         opt.textContent = getCurrencyLabel(code);
         sel.appendChild(opt);
       });
-      // Default to first active if not set
       if (!currentFutureCurrency || !activeCurrencies.includes(currentFutureCurrency)) {
         currentFutureCurrency = activeCurrencies[0] || null;
       }
@@ -219,26 +199,33 @@
           : '';
     }
 
-    function renderTable() {
+    function renderTable(savedValues = {}) {
       const tbody = document.getElementById('conversion-table-body');
       tbody.innerHTML = '';
-      // --- Render core units (BTC, Bits, Sats) ---
+
       coreUnits.forEach(unit => {
         const tr = document.createElement('tr');
         const tdLabel = document.createElement('td');
-        tdLabel.textContent = unit.symbol ? `${unit.symbol} ${unit.label}` : unit.label;
+        // For Bits, use the exact markup from earlier version
+        if (unit.key === 'bits') {
+          tdLabel.innerHTML = `<i class="Bits-Symbol_tilt">Ƀ</i> Bits`;
+        } else if (unit.symbol && unit.key !== 'bits') {
+          tdLabel.textContent = `${unit.symbol} ${unit.label}`;
+        } else {
+          tdLabel.textContent = unit.label;
+        }
         tdLabel.setAttribute('data-label', 'Unit/Currency');
         tr.appendChild(tdLabel);
         const tdCurrent = document.createElement('td');
         tdCurrent.appendChild(
-          createInputField(unit.key, false, unit.step, unit.label)
+          createInputField(unit.key, false, unit.step, unit.label, false, savedValues[getInputId(unit.key)])
         );
         tdCurrent.setAttribute('data-label', 'Current');
         tr.appendChild(tdCurrent);
         const tdFuture = document.createElement('td');
         tdFuture.style.display = showFuture() ? '' : 'none';
         tdFuture.appendChild(
-          createInputField(unit.key, true, unit.step, unit.label, true)
+          createInputField(unit.key, true, unit.step, unit.label, true, savedValues[getInputId(unit.key, true)])
         );
         tdFuture.setAttribute('data-label', 'Future');
         tr.appendChild(tdFuture);
@@ -247,8 +234,9 @@
         tr.appendChild(tdRemove);
         tbody.appendChild(tr);
       });
-      // --- Render fiat currencies (including USD, CAD, EUR as normal fiats) ---
+
       activeCurrencies.forEach(code => {
+        if (code === 'USD') return;
         const tr = document.createElement('tr');
         const tdLabel = document.createElement('td');
         tdLabel.textContent = getCurrencyLabel(code);
@@ -256,42 +244,39 @@
         tr.appendChild(tdLabel);
         const tdCurrent = document.createElement('td');
         tdCurrent.appendChild(
-          createInputField(code.toLowerCase(), false, '0.01', code)
+          createInputField(code.toLowerCase(), false, '0.01', code, false, savedValues[getInputId(code.toLowerCase())])
         );
         tdCurrent.setAttribute('data-label', 'Current');
         tr.appendChild(tdCurrent);
         const tdFuture = document.createElement('td');
         tdFuture.style.display = showFuture() ? '' : 'none';
         tdFuture.appendChild(
-          createInputField(code.toLowerCase(), true, '0.01', code, true)
+          createInputField(code.toLowerCase(), true, '0.01', code, true, savedValues[getInputId(code.toLowerCase(), true)])
         );
         tdFuture.setAttribute('data-label', 'Future');
         tr.appendChild(tdFuture);
         const tdRemove = document.createElement('td');
         tdRemove.setAttribute('data-label', 'Remove');
-        // Only allow removing if not a default fiat (USD, CAD, EUR)
-        if (!defaultFiats.includes(code)) {
-          const btn = document.createElement('button');
-          btn.textContent = '×';
-          btn.setAttribute('aria-label', `Remove ${code}`);
-          btn.onclick = () => {
-            activeCurrencies = activeCurrencies.filter(c => c !== code);
-            delete futureRates[code];
-            if (currentFutureCurrency === code) {
-              currentFutureCurrency = activeCurrencies[0] || null;
-            }
-            savePreferences();
-            updateAll();
-          };
-          tdRemove.appendChild(btn);
-        }
+        const btn = document.createElement('button');
+        btn.textContent = '×';
+        btn.setAttribute('aria-label', `Remove ${code}`);
+        btn.onclick = () => {
+          activeCurrencies = activeCurrencies.filter(c => c !== code);
+          delete futureRates[code];
+          if (currentFutureCurrency === code) {
+            currentFutureCurrency = activeCurrencies[0] || null;
+          }
+          savePreferences();
+          updateAll();
+        };
+        tdRemove.appendChild(btn);
         tr.appendChild(tdRemove);
         tbody.appendChild(tr);
       });
       document.getElementById('future-th').style.display = showFuture() ? '' : 'none';
     }
 
-    function createInputField(key, future, step, label, readOnly = false) {
+    function createInputField(key, future, step, label, readOnly = false, value = '') {
       const input = document.createElement('input');
       input.type = 'number';
       input.step = step;
@@ -299,6 +284,7 @@
       input.name = getInputId(key, future);
       input.setAttribute('aria-label', (future ? 'Future ' : 'Current ') + label);
       input.readOnly = !!readOnly;
+      if (value !== undefined && value !== null) input.value = value;
       if (!future && !readOnly) {
         input.addEventListener('input', (e) => {
           if (e.target.value !== '') {
@@ -312,17 +298,17 @@
     document.getElementById('currency-selector').addEventListener('change', function(e) {
       const code = e.target.value;
       if (code && !activeCurrencies.includes(code)) {
+        // --- Save current values ---
+        const savedValues = getAllInputValues();
         activeCurrencies.push(code);
-        // Clear all inputs to 0 when new currency is added (revert state)
-        resetAllInputs();
         savePreferences();
-        updateAll();
+        updateAll(savedValues);
       }
       e.target.value = '';
     });
 
     document.getElementById('show-future-checkbox').addEventListener('change', function() {
-      updateAll();
+      updateAll(getAllInputValues());
     });
 
     document.getElementById('future-currency-selector').addEventListener('change', function(e) {
@@ -358,16 +344,14 @@
         btcValue = value / 1e6;
       } else if (sourceKey === 'sats') {
         btcValue = value / 1e8;
-      } else if (exchangeRates[sourceKey.toUpperCase()]) {
-        // Any fiat (including USD, CAD, EUR, or user-added)
+      } else if (sourceKey === 'usd') {
+        btcValue = value / (1 / exchangeRates['BTC']);
+      } else {
         const upper = sourceKey.toUpperCase();
         const rateUsd = exchangeRates[upper];
         if (!rateUsd) return;
-        // USD value = entered value / exchange rate
         const usdValue = value / rateUsd;
         btcValue = usdValue / (1 / exchangeRates['BTC']);
-      } else {
-        return;
       }
       recalculateAll(btcValue, sourceKey);
     }
@@ -387,7 +371,7 @@
         futureRates[currentFutureCurrency] &&
         typeof exchangeRates[currentFutureCurrency] !== "undefined"
       ) {
-        const nowRate = exchangeRates[currentFutureCurrency]; // USD per 1 unit of selected fiat
+        const nowRate = exchangeRates[currentFutureCurrency];
         const usdPerBtc = 1 / exchangeRates['BTC'];
         const nowFiatPerBtc = usdPerBtc * nowRate;
         const futureFiatPerBtc = futureRates[currentFutureCurrency];
@@ -396,7 +380,6 @@
         }
       }
 
-      // --- CORE UNITS ---
       coreUnits.forEach(unit => {
         if (skipKey === unit.key) return;
         let val = '';
@@ -406,14 +389,15 @@
           val = btcValue * 1e6;
         } else if (unit.key === 'sats') {
           val = btcValue * 1e8;
+        } else if (unit.key === 'usd') {
+          val = btcValue * (1 / exchangeRates['BTC']);
         }
         document.getElementById(getInputId(unit.key)).value =
           typeof val === 'number' && !isNaN(val)
             ? (unit.key === 'btc'
                 ? val.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })
-                : val.toFixed(0))
+                : val.toFixed(unit.key === 'usd' ? 2 : 0))
             : '';
-        // Future
         if (showFuture()) {
           let futureVal = '';
           if (unit.key === 'btc') {
@@ -422,20 +406,21 @@
             futureVal = btcValue * 1e6;
           } else if (unit.key === 'sats') {
             futureVal = btcValue * 1e8;
+          } else if (unit.key === 'usd') {
+            futureVal = btcValue * (1 / exchangeRates['BTC']) * futureMultiplier;
           }
           document.getElementById(getInputId(unit.key, true)).value =
             typeof futureVal === 'number' && !isNaN(futureVal)
               ? (unit.key === 'btc'
                   ? futureVal.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })
-                  : futureVal.toFixed(0))
+                  : futureVal.toFixed(unit.key === 'usd' ? 2 : 0))
               : '';
         }
       });
 
-      // --- FIAT CURRENCIES (USD, CAD, EUR, etc.) ---
       activeCurrencies.forEach(code => {
         const key = code.toLowerCase();
-        if (!exchangeRates[code]) return;
+        if (key === 'usd') return;
         if (skipKey === key) return;
         const rate = exchangeRates[code];
         if (!rate) return;
@@ -461,13 +446,32 @@
         showFuture() && activeCurrencies.length > 0 ? '' : 'none';
     }
 
-    function updateAll() {
-      ensureDefaultFiats();
+    function updateAll(savedValues = {}) {
       populateCurrencySelector();
       renderFutureCurrencySelector();
-      renderTable();
+      renderTable(savedValues);
       recalculateAll();
       updateFutureControls();
+    }
+
+    function getAllInputValues() {
+      // Get all current and future input values by id
+      const ids = [];
+      coreUnits.forEach(unit => {
+        ids.push(getInputId(unit.key));
+        ids.push(getInputId(unit.key, true));
+      });
+      activeCurrencies.forEach(code => {
+        const key = code.toLowerCase();
+        ids.push(getInputId(key));
+        ids.push(getInputId(key, true));
+      });
+      const values = {};
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) values[id] = el.value;
+      });
+      return values;
     }
 
     function loadPreferences() {
@@ -486,22 +490,6 @@
       setCookie('bitcoinConverterPrefs', JSON.stringify({
         activeCurrencies
       }), 365);
-    }
-
-    // --- Reset all input fields to 0 (except future fields) ---
-    function resetAllInputs() {
-      // Core units
-      coreUnits.forEach(unit => {
-        const id = getInputId(unit.key);
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-      });
-      // Currencies
-      activeCurrencies.forEach(code => {
-        const id = getInputId(code.toLowerCase());
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-      });
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
