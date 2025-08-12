@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bitcoin Converter (Responsive, State-Preserving)</title>
+  <title>Bitcoin Converter (Responsive, State-Preserving, Bits Symbol, Bugfix)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     .responsive-table-container {
@@ -50,7 +50,7 @@
         border-bottom: none;
       }
     }
-    /* Try to restore Bits symbol styling (fallback if not found) */
+    /* Bits symbol style (fallback if bitsSymbol.js is missing) */
     .Bits-Symbol_tilt {
       font-family: 'Inter', 'Arial', sans-serif;
       font-style: normal;
@@ -62,7 +62,6 @@
       letter-spacing: -1px;
     }
   </style>
-  <!-- Attempt to load bitsSymbol.js for Bits icon if it exists -->
   <script src="bitsSymbol.js"></script>
 </head>
 <body>
@@ -298,7 +297,6 @@
     document.getElementById('currency-selector').addEventListener('change', function(e) {
       const code = e.target.value;
       if (code && !activeCurrencies.includes(code)) {
-        // --- Save current values ---
         const savedValues = getAllInputValues();
         activeCurrencies.push(code);
         savePreferences();
@@ -380,24 +378,27 @@
         }
       }
 
+      // --- CORE UNITS ---
       coreUnits.forEach(unit => {
-        if (skipKey === unit.key) return;
+        // Always update future field, even if skipKey
         let val = '';
-        if (unit.key === 'btc') {
-          val = btcValue;
-        } else if (unit.key === 'bits') {
-          val = btcValue * 1e6;
-        } else if (unit.key === 'sats') {
-          val = btcValue * 1e8;
-        } else if (unit.key === 'usd') {
-          val = btcValue * (1 / exchangeRates['BTC']);
+        if (skipKey !== unit.key) {
+          if (unit.key === 'btc') {
+            val = btcValue;
+          } else if (unit.key === 'bits') {
+            val = btcValue * 1e6;
+          } else if (unit.key === 'sats') {
+            val = btcValue * 1e8;
+          } else if (unit.key === 'usd') {
+            val = btcValue * (1 / exchangeRates['BTC']);
+          }
+          document.getElementById(getInputId(unit.key)).value =
+            typeof val === 'number' && !isNaN(val)
+              ? (unit.key === 'btc'
+                  ? val.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })
+                  : val.toFixed(unit.key === 'usd' ? 2 : 0))
+              : '';
         }
-        document.getElementById(getInputId(unit.key)).value =
-          typeof val === 'number' && !isNaN(val)
-            ? (unit.key === 'btc'
-                ? val.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })
-                : val.toFixed(unit.key === 'usd' ? 2 : 0))
-            : '';
         if (showFuture()) {
           let futureVal = '';
           if (unit.key === 'btc') {
@@ -421,15 +422,17 @@
       activeCurrencies.forEach(code => {
         const key = code.toLowerCase();
         if (key === 'usd') return;
-        if (skipKey === key) return;
         const rate = exchangeRates[code];
         if (!rate) return;
         const usdValue = btcValue * (1 / exchangeRates['BTC']);
         const currentVal = usdValue * rate;
-        document.getElementById(getInputId(key)).value =
-          typeof currentVal === 'number' && !isNaN(currentVal)
-            ? currentVal.toFixed(2)
-            : '';
+        // Always update future field, even if skipKey
+        if (skipKey !== key) {
+          document.getElementById(getInputId(key)).value =
+            typeof currentVal === 'number' && !isNaN(currentVal)
+              ? currentVal.toFixed(2)
+              : '';
+        }
         if (showFuture()) {
           const futureVal = currentVal * futureMultiplier;
           document.getElementById(getInputId(key, true)).value =
@@ -455,7 +458,6 @@
     }
 
     function getAllInputValues() {
-      // Get all current and future input values by id
       const ids = [];
       coreUnits.forEach(unit => {
         ids.push(getInputId(unit.key));
