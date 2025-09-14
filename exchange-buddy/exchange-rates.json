@@ -1,7 +1,7 @@
 {
   "disclaimer": "Usage subject to terms: https://openexchangerates.org/terms",
   "license": "https://openexchangerates.org/license",
-  "timestamp": 1757865614,
+  "timestamp": 1757869204,
   "base": "USD",
   "rates": {
     "AED": 3.6725,
@@ -25,7 +25,7 @@
     "BOB": 6.908363,
     "BRL": 5.3522,
     "BSD": 1,
-    "BTC": 0.000008674144,
+    "BTC": 0.000008655499,
     "BTN": 88.189831,
     "BWP": 13.318281,
     "BYN": 3.386359,
