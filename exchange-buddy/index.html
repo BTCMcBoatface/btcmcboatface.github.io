@@ -189,14 +189,17 @@
             const input = inputGroup.querySelector('input');
             input.addEventListener('input', function(e) {
                 if (e.target.value !== '') {
-                    convertFromSource(currencyCode.toLowerCase(), parseFloat(e.target.value));
+                    // Remove commas before parsing
+                    const valueWithoutCommas = e.target.value.replace(/,/g, '');
+                    convertFromSource(currencyCode.toLowerCase(), parseFloat(valueWithoutCommas));
                 }
             });
         
             // Trigger initial calculation using BTC value
             const btcInput = document.getElementById('btc-input');
             if (btcInput.value !== '') {
-                convertFromSource('btc', parseFloat(btcInput.value));
+                const valueWithoutCommas = btcInput.value.replace(/,/g, '');
+                convertFromSource('btc', parseFloat(valueWithoutCommas));
             }
             
             // Refresh the selector to show updated active status
@@ -352,15 +355,16 @@
             loadData().then(() => {
                 initializeCoreUnits();
                 
-                // Add event listeners for core unit inputs
-                ['btc', 'bits', 'sats', 'usd'].forEach(unit => {
-                    document.getElementById(`${unit}-input`).addEventListener('input', function(e) {
-                        if (e.target.value !== '') {
-                            convertFromSource(unit, parseFloat(e.target.value));
-                        }
-                    });
+            // Add event listeners for core unit inputs
+            ['btc', 'bits', 'sats', 'usd'].forEach(unit => {
+                document.getElementById(`${unit}-input`).addEventListener('input', function(e) {
+                    if (e.target.value !== '') {
+                        // Remove commas before parsing
+                        const valueWithoutCommas = e.target.value.replace(/,/g, '');
+                        convertFromSource(unit, parseFloat(valueWithoutCommas));
+                    }
                 });
-
+            });
                 // Add currency selector handler
                 document.getElementById('currency-selector').addEventListener('change', function(e) {
                     if (e.target.value) {
