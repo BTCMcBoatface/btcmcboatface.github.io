@@ -137,17 +137,22 @@
             const selector = document.getElementById('currency-selector');
             selector.innerHTML = '<option value="">Add fiat exchange rate</option>';
             
-            // Sort the currencies alphabetically and filter out CAD
-            const sortedCurrencies = [...configuredCurrencies]
-                .filter(code => code !== 'CAD')
-                .sort();
+            // Get all configured currencies and sort them alphabetically
+            const sortedCurrencies = [...configuredCurrencies].sort();
             
             sortedCurrencies.forEach(code => {
                 if (currencyMetadata[code]) {
                     const currency = currencyMetadata[code];
                     const option = document.createElement('option');
                     option.value = code;
-                    option.textContent = `${currency.emoji} ${code} (${currency.symbol})`;
+                    
+                    // Add "(active)" label if currency is already active
+                    const isActive = activeCurrencies.has(code) ? ' (active)' : '';
+                    option.textContent = `${currency.emoji} ${code} (${currency.symbol})${isActive}`;
+                    
+                    // Disable the option if it's already active
+                    option.disabled = isActive !== '';
+                    
                     selector.appendChild(option);
                 }
             });
@@ -158,7 +163,7 @@
             
             const currency = currencyMetadata[currencyCode];
             if (!currency) return;
-
+        
             const fiatInputs = document.getElementById('fiat-inputs');
             const inputGroup = document.createElement('div');
             inputGroup.className = 'input-group horizontal';
@@ -187,12 +192,19 @@
                     convertFromSource(currencyCode.toLowerCase(), parseFloat(e.target.value));
                 }
             });
-
+        
             // Trigger initial calculation using BTC value
             const btcInput = document.getElementById('btc-input');
             if (btcInput.value !== '') {
                 convertFromSource('btc', parseFloat(btcInput.value));
             }
+            
+            // Refresh the selector to show updated active status
+            const currenciesResponse = fetch('currencies.json');
+            currenciesResponse.then(r => r.json()).then(data => {
+                populateCurrencySelector(data.currencies);
+            });
+            
             savePreferences();
         }
 
@@ -279,9 +291,15 @@
                 element.remove();
                 activeCurrencies.delete(currency);
             }
+            
+            // Refresh the selector to show updated active status
+            const currenciesResponse = fetch('currencies.json');
+            currenciesResponse.then(r => r.json()).then(data => {
+                populateCurrencySelector(data.currencies);
+            });
+            
             savePreferences();
         }
-
         function savePreferences() {
             const preferences = {
                 activeCurrencies: Array.from(activeCurrencies)
