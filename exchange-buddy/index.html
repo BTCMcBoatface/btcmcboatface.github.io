@@ -53,25 +53,31 @@
                     </div>
                     <div class="input-group horizontal">
                         <label><i class="Bits-Symbol_tilt"></i> Bits</label>
-                        <input 
-                            type="number" 
-                            step="0.01" 
-                            id="bits-input" 
-                            name="bits"
-                            inputmode="decimal"
-                            autocomplete="off"
-                        >
+                        <div class="input-wrapper">
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                id="bits-input" 
+                                name="bits"
+                                inputmode="decimal"
+                                autocomplete="off"
+                            >
+                            <div class="input-display" id="bits-display"></div>
+                        </div>
                     </div>
                     <div class="input-group horizontal">
                         <label>⚡️ Sats</label>
-                        <input 
-                            type="number" 
-                            step="1" 
-                            id="sats-input" 
-                            name="sats"
-                            inputmode="decimal"
-                            autocomplete="off"
-                        >
+                        <div class="input-wrapper">
+                            <input 
+                                type="number" 
+                                step="1" 
+                                id="sats-input" 
+                                name="sats"
+                                inputmode="decimal"
+                                autocomplete="off"
+                            >
+                            <div class="input-display" id="sats-display"></div>
+                        </div>
                     </div>
                     <div class="input-group horizontal">
                         <label for="usd-input"></label>
@@ -84,8 +90,9 @@
                             autocomplete="off"
                         >
                     </div>
-                <!-- Additional Currencies Section -->
-                <div id="fiat-inputs" class="space-y-4">
+                    <!-- Additional Currencies Section -->
+                    <div id="fiat-inputs" class="space-y-4">
+                    </div>
                 </div>
             </div>
         </div>
@@ -264,12 +271,12 @@
             if (sourceType !== 'bits') {
                 const bitsValue = (btcValue * 1000000).toFixed(2);
                 document.getElementById('bits-input').value = bitsValue;
-                updateDisplayValue('bits-input', bitsValue);
+                document.getElementById('bits-display').textContent = parseFloat(bitsValue).toLocaleString('en-US');
             }
             if (sourceType !== 'sats') {
                 const satsValue = (btcValue * 100000000).toFixed(0);
                 document.getElementById('sats-input').value = satsValue;
-                updateDisplayValue('sats-input', satsValue);
+                document.getElementById('sats-display').textContent = parseFloat(satsValue).toLocaleString('en-US');
             }
             if (sourceType !== 'usd') {
                 document.getElementById('usd-input').value = usdValue.toFixed(2);
