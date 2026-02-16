@@ -155,6 +155,54 @@ select:-moz-focusring {
     text-align: center;
 }
 
+/* Pull-to-refresh indicator */
+#pull-indicator {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(180deg, #ff6600 0%, rgba(255, 102, 0, 0.8) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(255, 102, 0, 0.3);
+}
+
+#pull-text {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Spinning animation for refresh icon */
+#pull-indicator.refreshing #pull-text::before {
+    content: '⟳';
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Prevent text selection during pull */
+body.pulling {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+
 @media (prefers-color-scheme: dark) {
     body {
         background-color: #1a1a1a;  /* Dark grey background */
