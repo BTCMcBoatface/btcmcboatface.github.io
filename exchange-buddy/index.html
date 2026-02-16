@@ -254,7 +254,7 @@
         function updateAllFields(btcValue, sourceType) {
             const btcUsdRate = 1 / exchangeRates.BTC;
             const usdValue = btcValue * btcUsdRate;
-
+        
             // Update core units (skip the source field)
             if (sourceType !== 'btc') {
                 document.getElementById('btc-input').value = btcValue.toLocaleString('en-US', {
@@ -263,15 +263,24 @@
                 });
             }
             if (sourceType !== 'bits') {
-                document.getElementById('bits-input').value = (btcValue * 1000000).toFixed(2);
+                document.getElementById('bits-input').value = (btcValue * 1000000).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
             }
             if (sourceType !== 'sats') {
-                document.getElementById('sats-input').value = (btcValue * 100000000).toFixed(0);
+                document.getElementById('sats-input').value = (btcValue * 100000000).toLocaleString('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                });
             }
             if (sourceType !== 'usd') {
-                document.getElementById('usd-input').value = usdValue.toFixed(2);
+                document.getElementById('usd-input').value = usdValue.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
             }
-
+        
             // Update all active fiat currencies
             activeCurrencies.forEach(currency => {
                 if (currency.toLowerCase() !== sourceType) {
@@ -279,7 +288,10 @@
                     const value = usdValue * rate;
                     const input = document.getElementById(`${currency.toLowerCase()}-input`);
                     if (input) {
-                        input.value = value.toFixed(2);
+                        input.value = value.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
                     }
                 }
             });
