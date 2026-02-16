@@ -447,26 +447,28 @@
             }
         }, false);
 
-        // Refresh function to reload exchange rates and currency data
+// Refresh function to reload exchange rates and currency data
         async function refreshData() {
             try {
                 const ratesResponse = await fetch('exchange-rates.json?t=' + Date.now());
                 const ratesData = await ratesResponse.json();
                 exchangeRates = ratesData.rates;
-
+        
                 const lastUpdated = new Date(ratesData.timestamp * 1000);
                 document.getElementById('last-updated').textContent = 
                     `Fiat exchange rates last updated: ${lastUpdated.toLocaleString()}`;
-
+        
                 // Recalculate all conversions with new rates
                 const btcInput = document.getElementById('btc-input');
                 if (btcInput.value !== '') {
-                    convertFromSource('btc', parseFloat(btcInput.value));
+                    // Remove commas before parsing
+                    const valueWithoutCommas = btcInput.value.replace(/,/g, '');
+                    convertFromSource('btc', parseFloat(valueWithoutCommas));
                 }
             } catch (error) {
                 console.error('Error refreshing data:', error);
             }
-        }     
+        }
     </script>   
 </body>
 </html>
