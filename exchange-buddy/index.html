@@ -341,6 +341,99 @@
                 });
             });
         });
+
+           // Pull-to-refresh functionality
+        let pullStartY = 0;
+        let isPulling = false;
+        const refreshThreshold = 80; // pixels to pull down to trigger refresh
+        let isRefreshing = false;
+
+        document.addEventListener('touchstart', (e) => {
+            // Only start pull if we're at the top of the page
+            if (window.scrollY === 0) {
+                pullStartY = e.touches[0].clientY;
+                isPulling = true;
+            }
+        }, false);
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isPulling || isRefreshing) return;
+
+            const pullDistance = e.touches[0].clientY - pullStartY;
+            
+            if (pullDistance > 0) {
+                e.preventDefault(); // Prevent default scroll behavior
+                
+                const pullIndicator = document.getElementById('pull-indicator');
+                const pullText = document.getElementById('pull-text');
+                
+                // Update the pull indicator visibility and position
+                pullIndicator.style.display = 'block';
+                pullIndicator.style.transform = `translateY(${Math.min(pullDistance, refreshThreshold)}px)`;
+                
+                // Change text based on pull distance
+                if (pullDistance < refreshThreshold) {
+                    pullText.textContent = '↓ Pull to refresh';
+                } else {
+                    pullText.textContent = '↑ Release to refresh';
+                }
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!isPulling) return;
+            isPulling = false;
+
+            const pullDistance = e.changedTouches[0].clientY - pullStartY;
+            const pullIndicator = document.getElementById('pull-indicator');
+            
+            if (pullDistance > refreshThreshold && !isRefreshing) {
+                // Trigger refresh
+                isRefreshing = true;
+                pullIndicator.style.transform = 'translateY(0)';
+                
+                const pullText = document.getElementById('pull-text');
+                pullText.textContent = '⟳ Refreshing...';
+                pullIndicator.classList.add('refreshing');
+                
+                // Call the refresh function
+                refreshData().then(() => {
+                    // Hide the indicator after refresh
+                    setTimeout(() => {
+                        pullIndicator.style.display = 'none';
+                        pullIndicator.classList.remove('refreshing');
+                        isRefreshing = false;
+                        pullStartY = 0;
+                    }, 600);
+                });
+            } else {
+                // Hide indicator if not enough pull distance
+                pullIndicator.style.display = 'none';
+                pullIndicator.classList.remove('refreshing');
+                isRefreshing = false;
+            }
+        }, false);
+
+        // Refresh function to reload exchange rates and currency data
+        async function refreshData() {
+            try {
+                const ratesResponse = await fetch('exchange-rates.json?t=' + Date.now());
+                const ratesData = await ratesResponse.json();
+                exchangeRates = ratesData.rates;
+
+                const lastUpdated = new Date(ratesData.timestamp * 1000);
+                document.getElementById('last-updated').textContent = 
+                    `Fiat exchange rates last updated: ${lastUpdated.toLocaleString()}`;
+
+                // Recalculate all conversions with new rates
+                const btcInput = document.getElementById('btc-input');
+                if (btcInput.value !== '') {
+                    convertFromSource('btc', parseFloat(btcInput.value));
+                }
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+            }
+        }     
     </script>   
 </body>
 </html>
