@@ -351,23 +351,31 @@
                         console.log('ServiceWorker registration failed: ', err);
                     });
             }
-
+        
             // Load saved preferences
             loadPreferences();
             
             loadData().then(() => {
                 initializeCoreUnits();
                 
-            // Add event listeners for core unit inputs
-            ['btc', 'bits', 'sats', 'usd'].forEach(unit => {
-                document.getElementById(`${unit}-input`).addEventListener('input', function(e) {
-                    if (e.target.value !== '') {
-                        // Remove commas before parsing
-                        const valueWithoutCommas = e.target.value.replace(/,/g, '');
-                        convertFromSource(unit, parseFloat(valueWithoutCommas));
-                    }
+                // Add event listeners for core unit inputs
+                ['btc', 'bits', 'sats', 'usd'].forEach(unit => {
+                    document.getElementById(`${unit}-input`).addEventListener('input', function(e) {
+                        if (e.target.value !== '') {
+                            // Remove commas before parsing
+                            const valueWithoutCommas = e.target.value.replace(/,/g, '');
+                            convertFromSource(unit, parseFloat(valueWithoutCommas));
+                        }
+                        
+                        // Update display for bits and sats as user types
+                        if (unit === 'bits') {
+                            document.getElementById('bits-display').textContent = e.target.value ? parseFloat(e.target.value).toLocaleString('en-US') : '';
+                        } else if (unit === 'sats') {
+                            document.getElementById('sats-display').textContent = e.target.value ? parseFloat(e.target.value).toLocaleString('en-US') : '';
+                        }
+                    });
                 });
-            });
+                
                 // Add currency selector handler
                 document.getElementById('currency-selector').addEventListener('change', function(e) {
                     if (e.target.value) {
