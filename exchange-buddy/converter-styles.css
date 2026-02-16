@@ -17,38 +17,33 @@ body {
     margin: 2rem auto;
 }
 
-/* Format display for Sats and Bits inputs */
-#sats-input,
-#bits-input {
+.input-wrapper {
+    flex: 1;
     position: relative;
+    display: flex;
+    align-items: center;
 }
 
-#sats-input::after,
-#bits-input::after {
-    content: attr(data-display);
+.input-wrapper input {
+    width: 100%;
+    background-color: #333333;
+    color: transparent;
+    caret-color: #ffffff;
+    border: 1px solid #666666;
+    border-radius: 4px;
+    padding: 0.5rem;
+    font-size: 1rem;
+}
+
+.input-display {
     position: absolute;
     left: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
     color: #ffffff;
-    font-family: 'Inter', sans-serif;
     font-size: 1rem;
-    z-index: 1;
+    font-family: 'Inter', sans-serif;
+    pointer-events: none;
+    user-select: none;
 }
-
-/* Make the actual input text transparent so the formatted display shows through */
-#sats-input,
-#bits-input {
-    color: transparent;
-    caret-color: #ffffff; /* Keep cursor visible when typing */
-}
-
-#sats-input::placeholder,
-#bits-input::placeholder {
-    color: transparent;
-}
-
 
 /* Make container full width on mobile but keep top/bottom rounded corners */
 @media (max-width: 640px) {
