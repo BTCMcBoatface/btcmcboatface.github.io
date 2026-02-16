@@ -220,12 +220,11 @@
             // Add CAD as default currency
             addCurrencyInput('CAD');
         }
-
         function convertFromSource(sourceType, value) {
             // First convert to BTC as our base unit
             let btcValue;
             const btcUsdRate = 1 / exchangeRates.BTC;
-
+        
             // Convert input to BTC
             switch(sourceType) {
                 case 'btc':
@@ -246,7 +245,7 @@
                     const usdValue = value / sourceRate;
                     btcValue = usdValue / btcUsdRate;
             }
-
+        
             // Update all fields based on BTC value
             updateAllFields(btcValue, sourceType);
         }
