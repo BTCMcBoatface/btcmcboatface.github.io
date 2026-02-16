@@ -259,28 +259,16 @@
         
             // Update core units (skip the source field)
             if (sourceType !== 'btc') {
-                document.getElementById('btc-input').value = btcValue.toLocaleString('en-US', {
-                    minimumFractionDigits: 8,
-                    maximumFractionDigits: 8
-                });
+                document.getElementById('btc-input').value = btcValue.toFixed(8);
             }
             if (sourceType !== 'bits') {
-                document.getElementById('bits-input').value = (btcValue * 1000000).toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
+                document.getElementById('bits-input').value = (btcValue * 1000000).toFixed(2);
             }
             if (sourceType !== 'sats') {
-                document.getElementById('sats-input').value = (btcValue * 100000000).toLocaleString('en-US', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                });
+                document.getElementById('sats-input').value = (btcValue * 100000000).toFixed(0);
             }
             if (sourceType !== 'usd') {
-                document.getElementById('usd-input').value = usdValue.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
+                document.getElementById('usd-input').value = usdValue.toFixed(2);
             }
         
             // Update all active fiat currencies
@@ -290,10 +278,7 @@
                     const value = usdValue * rate;
                     const input = document.getElementById(`${currency.toLowerCase()}-input`);
                     if (input) {
-                        input.value = value.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        });
+                        input.value = value.toFixed(2);
                     }
                 }
             });
