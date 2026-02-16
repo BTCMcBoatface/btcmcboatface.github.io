@@ -17,6 +17,39 @@ body {
     margin: 2rem auto;
 }
 
+/* Format display for Sats and Bits inputs */
+#sats-input,
+#bits-input {
+    position: relative;
+}
+
+#sats-input::after,
+#bits-input::after {
+    content: attr(data-display);
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    z-index: 1;
+}
+
+/* Make the actual input text transparent so the formatted display shows through */
+#sats-input,
+#bits-input {
+    color: transparent;
+    caret-color: #ffffff; /* Keep cursor visible when typing */
+}
+
+#sats-input::placeholder,
+#bits-input::placeholder {
+    color: transparent;
+}
+
+
 /* Make container full width on mobile but keep top/bottom rounded corners */
 @media (max-width: 640px) {
     .converter-container {
