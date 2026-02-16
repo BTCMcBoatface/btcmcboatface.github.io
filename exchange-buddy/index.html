@@ -262,10 +262,14 @@
                 document.getElementById('btc-input').value = btcValue.toFixed(8);
             }
             if (sourceType !== 'bits') {
-                document.getElementById('bits-input').value = (btcValue * 1000000).toFixed(2);
+                const bitsValue = (btcValue * 1000000).toFixed(2);
+                document.getElementById('bits-input').value = bitsValue;
+                updateDisplayValue('bits-input', bitsValue);
             }
             if (sourceType !== 'sats') {
-                document.getElementById('sats-input').value = (btcValue * 100000000).toFixed(0);
+                const satsValue = (btcValue * 100000000).toFixed(0);
+                document.getElementById('sats-input').value = satsValue;
+                updateDisplayValue('sats-input', satsValue);
             }
             if (sourceType !== 'usd') {
                 document.getElementById('usd-input').value = usdValue.toFixed(2);
@@ -282,6 +286,13 @@
                     }
                 }
             });
+        }
+        
+        // Helper function to update display with formatted value
+        function updateDisplayValue(inputId, value) {
+            const input = document.getElementById(inputId);
+            const formattedValue = parseFloat(value).toLocaleString('en-US');
+            input.setAttribute('data-display', formattedValue);
         }
 
         function removeCurrency(currency) {
