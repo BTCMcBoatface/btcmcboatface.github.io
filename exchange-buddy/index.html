@@ -6,32 +6,19 @@
     <meta name="theme-color" content="#ffffff">
     <title>Bitcoin Converter</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <script src="htmx.min.js"></script>
     <link rel="stylesheet" href="converter-styles.css">
     <script src="bitsSymbol.js"></script>
     <link rel="manifest" href="manifest.json">
 
 </head>
 <body>
+    <div id="pull-indicator"><span id="pull-text"></span></div>
     <div class="converter-container">
         <div class="header">
             <h1 class="converter-title">Bitcoin Converter</h1>
             <div class="currency-selector">
                 <select id="currency-selector">
                     <option value="">Add Currency...</option>
-                    <script>
-                        fetch('currencies.json')
-                            .then(response => response.json())
-                            .then(data => {
-                                const selector = document.getElementById('currency-selector');
-                                data.currencies.forEach(currency => {
-                                    const option = document.createElement('option');
-                                    option.value = currency.code;
-                                    option.textContent = currency.code;
-                                    selector.appendChild(option);
-                                });
-                            });
-                    </script>
                 </select>
             </div>
         </div>
@@ -103,6 +90,7 @@
     <script>
         let exchangeRates = {};
         let currencyMetadata = {};
+        let configuredCurrencies = [];
         let activeCurrencies = new Set();
 
         // Load both exchange rates and currency metadata
@@ -132,20 +120,22 @@
                     return acc;
                 }, {});
 
+                // Keep configured currencies in memory for the selector
+                configuredCurrencies = currenciesData.currencies;
+
                 // Populate currency selector with configured currencies
-                populateCurrencySelector(currenciesData.currencies);
-                initializeCoreUnits();
+                populateCurrencySelector(configuredCurrencies);
             } catch (error) {
                 console.error('Error loading data:', error);
             }
         }
 
-        function populateCurrencySelector(configuredCurrencies) {
+        function populateCurrencySelector(currencies) {
             const selector = document.getElementById('currency-selector');
             selector.innerHTML = '<option value="">Add fiat exchange rate</option>';
             
             // Get all configured currencies and sort them alphabetically
-            const sortedCurrencies = [...configuredCurrencies].sort();
+            const sortedCurrencies = [...currencies].sort();
             
             sortedCurrencies.forEach(code => {
                 if (currencyMetadata[code]) {
@@ -210,10 +200,7 @@
             }
             
             // Refresh the selector to show updated active status
-            const currenciesResponse = fetch('currencies.json');
-            currenciesResponse.then(r => r.json()).then(data => {
-                populateCurrencySelector(data.currencies);
-            });
+            populateCurrencySelector(configuredCurrencies);
             
             savePreferences();
         }
@@ -227,8 +214,10 @@
                 usdLabel.innerHTML = `${usdData.emoji} USD ${usdData.symbol}`;
             }
             
-            // Add CAD as default currency
-            addCurrencyInput('CAD');
+            // Add CAD as default currency (only when there are no saved preferences)
+            if (!localStorage.getItem('bitcoinConverterPrefs')) {
+                addCurrencyInput('CAD');
+            }
         }
         function convertFromSource(sourceType, value) {
             // First convert to BTC as our base unit
@@ -295,13 +284,6 @@
             });
         }
         
-        // Helper function to update display with formatted value
-        function updateDisplayValue(inputId, value) {
-            const input = document.getElementById(inputId);
-            const formattedValue = parseFloat(value).toLocaleString('en-US');
-            input.setAttribute('data-display', formattedValue);
-        }
-
         function removeCurrency(currency) {
             const element = document.querySelector(`[data-currency="${currency}"]`);
             if (element) {
@@ -310,10 +292,7 @@
             }
             
             // Refresh the selector to show updated active status
-            const currenciesResponse = fetch('currencies.json');
-            currenciesResponse.then(r => r.json()).then(data => {
-                populateCurrencySelector(data.currencies);
-            });
+            populateCurrencySelector(configuredCurrencies);
             
             savePreferences();
         }
@@ -329,12 +308,10 @@
             if (savedPrefs) {
                 const prefs = JSON.parse(savedPrefs);
                 
-                // Restore active currencies
+                // Restore active currencies (metadata is loaded by this point)
                 if (prefs.activeCurrencies) {
                     prefs.activeCurrencies.forEach(currency => {
-                        if (currency !== 'CAD') {
-                            addCurrencyInput(currency);
-                        }
+                        addCurrencyInput(currency);
                     });
                 }
             }
@@ -352,11 +329,13 @@
                     });
             }
         
-            // Load saved preferences
-            loadPreferences();
-            
+            // Load data first, then initialize (metadata must be available
+            // before currencies can be added)
             loadData().then(() => {
                 initializeCoreUnits();
+                
+                // Restore saved preferences now that metadata is loaded
+                loadPreferences();
                 
                 // Add event listeners for core unit inputs
                 ['btc', 'bits', 'sats', 'usd'].forEach(unit => {
@@ -412,7 +391,7 @@
                 const pullText = document.getElementById('pull-text');
                 
                 // Update the pull indicator visibility and position
-                pullIndicator.style.display = 'block';
+                pullIndicator.style.display = 'flex';
                 pullIndicator.style.transform = `translateY(${Math.min(pullDistance, refreshThreshold)}px)`;
                 
                 // Change text based on pull distance
