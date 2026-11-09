@@ -2,10 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f4f6">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a">
     <title>Bitcoin Converter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="preload" href="fonts/bits-symbol.woff" as="font" type="font/woff" crossorigin>
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192x192.png">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
     <link rel="stylesheet" href="converter-styles.css">
     <script src="bitsSymbol.js"></script>
     <link rel="manifest" href="manifest.json">
@@ -17,18 +23,18 @@
         <div class="header">
             <h1 class="converter-title">Bitcoin Converter</h1>
             <div class="currency-selector">
-                <select id="currency-selector">
-                    <option value="">Add Currency...</option>
+                <select id="currency-selector" aria-label="Add fiat currency">
+                    <option value="">+ Add currency</option>
                 </select>
             </div>
         </div>
 
-        <div class="space-y-4">
-            <div id="conversion-results" class="space-y-4">
+        <div>
+            <div id="conversion-results">
                 <!-- Core Units Section (BTC, Bits, Sats, USD) -->
                 <div class="core-units">
                     <div class="input-group horizontal">
-                        <label>₿ BTC</label>
+                        <label for="btc-input">₿ BTC</label>
                         <input 
                             type="number" 
                             step="0.00000001" 
@@ -39,7 +45,7 @@
                         >
                     </div>
                     <div class="input-group horizontal">
-                        <label><i class="Bits-Symbol_tilt"></i> Bits</label>
+                        <label for="bits-input"><i class="Bits-Symbol_tilt"></i> Bits</label>
                         <div class="input-wrapper">
                             <input 
                                 type="number" 
@@ -53,7 +59,7 @@
                         </div>
                     </div>
                     <div class="input-group horizontal">
-                        <label>⚡️ Sats</label>
+                        <label for="sats-input">⚡️ Sats</label>
                         <div class="input-wrapper">
                             <input 
                                 type="number" 
@@ -78,13 +84,13 @@
                         >
                     </div>
                     <!-- Additional Currencies Section -->
-                    <div id="fiat-inputs" class="space-y-4">
+                    <div id="fiat-inputs">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="last-updated" id="last-updated"></div>
+        <div class="last-updated" id="last-updated" aria-live="polite"></div>
     </div>
 
     <script>
@@ -132,7 +138,7 @@
 
         function populateCurrencySelector(currencies) {
             const selector = document.getElementById('currency-selector');
-            selector.innerHTML = '<option value="">Add fiat exchange rate</option>';
+            selector.innerHTML = '<option value="">+ Add currency</option>';
             
             // Get all configured currencies and sort them alphabetically
             const sortedCurrencies = [...currencies].sort();
@@ -167,7 +173,7 @@
             inputGroup.dataset.currency = currencyCode;
             
             inputGroup.innerHTML = `
-                <label>${currency.emoji} ${currencyCode} ${currency.symbol}</label>
+                <label for="${currencyCode.toLowerCase()}-input">${currency.emoji} ${currencyCode} ${currency.symbol}</label>
                 <input 
                     type="number" 
                     step="0.01" 
@@ -176,7 +182,7 @@
                     inputmode="decimal"
                     autocomplete="off"
                 >
-                <button type="button" class="remove-currency" onclick="removeCurrency('${currencyCode}')">×</button>
+                <button type="button" class="remove-currency" aria-label="Remove ${currencyCode}" onclick="removeCurrency('${currencyCode}')">×</button>
             `;
             
             fiatInputs.appendChild(inputGroup);

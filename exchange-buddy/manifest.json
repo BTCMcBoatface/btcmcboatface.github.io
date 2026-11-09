@@ -4,8 +4,8 @@
     "description": "A Bitcoin conversion calculator",
     "start_url": "/exchange-buddy/",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#ffffff",
+    "background_color": "#0a0a0a",
+    "theme_color": "#0a0a0a",
     "icons": [
         {
             "src": "icon-192x192.png",

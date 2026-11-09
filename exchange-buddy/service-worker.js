@@ -1,4 +1,4 @@
-const CACHE_NAME = 'exchange-buddy-v2';
+const CACHE_NAME = 'exchange-buddy-v3';
 // Clean up any cache from previous versions of the app
 const OLD_CACHE_PREFIXES = ['bitcoin-converter', 'exchange-buddy'];
 
